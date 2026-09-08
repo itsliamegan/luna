@@ -10,9 +10,6 @@ dev = [
     "ty>=0.0.78",
 ]
 
-[project.scripts]
-test = "luna.test.runner:main"
-
 [build-system]
 requires = ["uv_build"]
 build-backend = "uv_build"

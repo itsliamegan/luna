@@ -31,7 +31,7 @@ def import_from_file(path: Path, module_name: str) -> ModuleType:
 	return module
 
 
-def run(pattern: str, capture: Capture):
+def main(pattern: str, capture: Capture):
 	if pattern == "*":
 		filter = EmptyFilter()
 	else:
@@ -61,10 +61,10 @@ def run(pattern: str, capture: Capture):
 		raise SystemExit(1)
 
 
-def main():
+if __name__ == "__main__":
 	program = Program(
 		"luna test",
-		run,
+		main,
 		arguments=[
 			Argument(
 				"pattern",
@@ -83,7 +83,3 @@ def main():
 		],
 	)
 	program.run(sys.argv)
-
-
-if __name__ == "__main__":
-	main()
