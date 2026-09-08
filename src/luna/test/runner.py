@@ -3,9 +3,9 @@ from pathlib import Path
 import sys
 from types import ModuleType
 
-from luna.cli import Argument, Program
+from luna.cli import Argument, Option, Program
 from luna.test import Case, Filter, Suite, Test
-from luna.test.reporting import report
+from luna.test.reporting import Capture, report
 
 
 class EmptyFilter(Filter):
@@ -31,7 +31,7 @@ def import_from_file(path: Path, module_name: str) -> ModuleType:
 	return module
 
 
-def run(pattern: str):
+def run(pattern: str, capture: Capture):
 	if pattern == "*":
 		filter = EmptyFilter()
 	else:
@@ -56,7 +56,7 @@ def run(pattern: str):
 	suite = Suite(tests)
 	results = suite.run(filter)
 
-	passed = report(results)
+	passed = report(results, capture)
 	if not passed:
 		raise SystemExit(1)
 
@@ -71,6 +71,14 @@ def main():
 				required=False,
 				default="*",
 				help="only run tests matching this name, if provided",
+			)
+		],
+		options=[
+			Option(
+				"capture",
+				type=Capture,
+				default=Capture.ALWAYS,
+				help="when to capture output (always, pass, never)",
 			)
 		],
 	)

@@ -1,6 +1,7 @@
 from collections.abc import Callable
+from contextlib import redirect_stderr, redirect_stdout
+from dataclasses import dataclass
 from io import StringIO
-import sys
 from typing import Protocol
 
 
@@ -8,11 +9,24 @@ class Filter(Protocol):
 	def match(self, test: Test, case: Case) -> bool: ...
 
 
+@dataclass(frozen=True)
+class Output:
+	stdout: str
+	stderr: str
+
+
 class Result:
-	def __init__(self, test_name: str, case_name: str, case_index: int):
+	def __init__(
+		self,
+		test_name: str,
+		case_name: str,
+		case_index: int,
+		output: Output,
+	):
 		self.test_name = test_name
 		self.case_name = case_name
 		self.case_index = case_index
+		self.output = output
 
 
 class Pass(Result):
@@ -26,8 +40,9 @@ class Fail(Result):
 		case_name: str,
 		case_index: int,
 		error: AssertionError,
+		output: Output,
 	):
-		super().__init__(test_name, case_name, case_index)
+		super().__init__(test_name, case_name, case_index, output)
 		self.error = error
 
 
@@ -38,8 +53,9 @@ class Error(Result):
 		case_name: str,
 		case_index: int,
 		error: Exception,
+		output: Output,
 	):
-		super().__init__(test_name, case_name, case_index)
+		super().__init__(test_name, case_name, case_index, output)
 		self.error = error
 
 
@@ -49,20 +65,24 @@ class Case:
 		self.impl = impl
 
 	def run(self, test_name: str, case_index: int) -> Result:
-		stdout = sys.stdout
-		stderr = sys.stderr
-		sys.stdout = StringIO()
-		sys.stderr = StringIO()
-		try:
-			self.impl()
-			return Pass(test_name, self.name, case_index)
-		except AssertionError as error:
-			return Fail(test_name, self.name, case_index, error)
-		except Exception as error:  # noqa: BLE001
-			return Error(test_name, self.name, case_index, error)
-		finally:
-			sys.stdout = stdout
-			sys.stderr = stderr
+		stdout = StringIO()
+		stderr = StringIO()
+		with redirect_stdout(stdout), redirect_stderr(stderr):
+			try:
+				self.impl()
+				error = None
+			except AssertionError as caught:
+				error = caught
+			except Exception as caught:  # noqa: BLE001
+				error = caught
+
+		output = Output(stdout.getvalue(), stderr.getvalue())
+		if error is None:
+			return Pass(test_name, self.name, case_index, output)
+		elif isinstance(error, AssertionError):
+			return Fail(test_name, self.name, case_index, error, output)
+		else:
+			return Error(test_name, self.name, case_index, error, output)
 
 	def __repr__(self) -> str:
 		return f"Case(name={self.name!r}, impl={self.impl!r})"
