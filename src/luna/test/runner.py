@@ -3,6 +3,7 @@ from pathlib import Path
 import sys
 from types import ModuleType
 
+from luna.cli import Argument, Program
 from luna.test import Case, Filter, Suite, Test
 from luna.test.reporting import report
 
@@ -30,11 +31,11 @@ def import_from_file(path: Path, module_name: str) -> ModuleType:
 	return module
 
 
-def main():
-	if len(sys.argv) == 2:
-		filter = TestNameFilter(sys.argv[1])
-	else:
+def run(pattern: str):
+	if pattern == "*":
 		filter = EmptyFilter()
+	else:
+		filter = TestNameFilter(pattern)
 
 	test_dir = Path.cwd().joinpath("test")
 	tests = []
@@ -57,7 +58,23 @@ def main():
 
 	passed = report(results)
 	if not passed:
-		sys.exit(1)
+		raise SystemExit(1)
+
+
+def main():
+	program = Program(
+		"luna test",
+		run,
+		arguments=[
+			Argument(
+				"pattern",
+				required=False,
+				default="*",
+				help="only run tests matching this name, if provided",
+			)
+		],
+	)
+	program.run(sys.argv)
 
 
 if __name__ == "__main__":

@@ -72,6 +72,7 @@ def create_parser(name: str, description: str | None) -> ArgumentParser:
 		prog=name,
 		description=description,
 		add_help=False,
+		color=False,
 	)
 	add_help(parser)
 	return parser
@@ -113,6 +114,7 @@ def add_arguments_and_options(
 	arguments: list[Argument],
 	options: list[Option],
 ):
+	parser._positionals.title = "arguments"
 	for argument in arguments:
 		add_argument(parser, argument)
 	for option in options:

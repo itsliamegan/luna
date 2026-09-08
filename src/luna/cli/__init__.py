@@ -95,6 +95,10 @@ class Program:
 	def run(self, argv: list[str]) -> object:
 		from luna.cli.parse import HelpRequested, ParseError, parse
 
+		# If the provided argv includes the current program, drop it.
+		if argv and argv[0] == sys.argv[0]:
+			argv = argv[1:]
+
 		try:
 			result = parse(self, argv)
 		except HelpRequested as requested:
