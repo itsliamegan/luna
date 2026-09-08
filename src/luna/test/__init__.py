@@ -9,7 +9,7 @@ class Filter(Protocol):
 	def match(self, test: Test, case: Case) -> bool: ...
 
 
-@dataclass(frozen=True)
+@dataclass
 class Output:
 	stdout: str
 	stderr: str

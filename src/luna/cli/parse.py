@@ -9,7 +9,7 @@ from luna.cli import Argument, Command, Option, Program
 COMMAND_DESTINATION = "__command"
 
 
-@dataclass(frozen=True)
+@dataclass
 class ParseResult:
 	program: Program
 	command: Command | None
