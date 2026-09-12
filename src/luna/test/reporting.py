@@ -1,5 +1,5 @@
+from collections.abc import Sequence
 from enum import StrEnum
-import traceback
 
 from luna import ansi
 from luna.ansi import Escape
@@ -12,7 +12,7 @@ class Capture(StrEnum):
 	NEVER = "never"
 
 
-def report(results: list[Result], capture: Capture = Capture.ALWAYS) -> bool:
+def report(results: Sequence[Result], capture: Capture = Capture.ALWAYS) -> bool:
 	def sort_key(result: Result) -> tuple[str, int]:
 		return result.test_name, result.case_index
 
@@ -29,21 +29,9 @@ def report(results: list[Result], capture: Capture = Capture.ALWAYS) -> bool:
 
 		print(f"{desc}\t{result.test_name}:{result.case_name}")
 
-		if isinstance(result, (Fail, Error)):
-			if isinstance(result, Fail) and str(result.error):
-				for line in str(result.error).splitlines():
-					print(f"\t{line}")
-			elif isinstance(result, Error):
-				traceback_start = result.error.__traceback__
-				if traceback_start is not None:
-					# Skip the internal test case call so the traceback points
-					# at where the error was actually raised.
-					traceback_start = traceback_start.tb_next
-				formatted = traceback.format_exception(
-					type(result.error), result.error, traceback_start
-				)
-				for line in "".join(formatted).splitlines():
-					print(f"\t{line}")
+		if isinstance(result, (Fail, Error)) and result.error:
+			for line in result.error.splitlines():
+				print(f"\t{line}")
 
 		if capture is Capture.NEVER or (
 			capture is Capture.PASS and isinstance(result, (Fail, Error))
