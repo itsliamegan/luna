@@ -6,3 +6,5 @@ Luna is a collection of Python support libraries. They include:
   [assertions](src/luna/test/assertion.py) and a default
   [runner](src/luna/test/runner.py).
 - A [CLI parsing library](src/luna/cli/__init__.py) that wraps `argparse`.
+- [Inflection helpers](src/luna/inflect.py) that turn identifiers like
+  `board_ids` into words, sentences and kebab case.
