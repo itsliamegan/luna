@@ -1,8 +1,8 @@
-from luna.inflect import kebab, sentence, words
+from luna.inflect import dash, sentence, words
 from luna.test.assertion import assert_eq
 
 
-def test_splits_identifiers_into_words():
+def test_splits_names_into_words():
 	assert_eq(words("board_ids"), ["board", "ids"])
 	assert_eq(words("class_"), ["class"])
 	assert_eq(words("_private"), ["private"])
@@ -10,7 +10,7 @@ def test_splits_identifiers_into_words():
 	assert_eq(words("title"), ["title"])
 
 
-def test_writes_identifiers_as_sentences():
+def test_writes_names_as_sentences():
 	assert_eq(sentence("open_in_new_tab"), "Open in new tab")
 	assert_eq(sentence("class_"), "Class")
 	assert_eq(sentence("_private"), "Private")
@@ -22,9 +22,9 @@ def test_leaves_the_rest_of_a_sentence_as_written():
 	assert_eq(sentence("return_to_URL"), "Return to URL")
 
 
-def test_writes_identifiers_in_kebab_case():
-	assert_eq(kebab("data_turbo_frame"), "data-turbo-frame")
-	assert_eq(kebab("class_"), "class")
-	assert_eq(kebab("_private"), "private")
-	assert_eq(kebab("a__b"), "a-b")
-	assert_eq(kebab("title"), "title")
+def test_joins_names_with_dashes():
+	assert_eq(dash("data_turbo_frame"), "data-turbo-frame")
+	assert_eq(dash("class_"), "class")
+	assert_eq(dash("_private"), "private")
+	assert_eq(dash("a__b"), "a-b")
+	assert_eq(dash("title"), "title")
