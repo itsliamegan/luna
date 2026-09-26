@@ -1,19 +1,15 @@
-import argparse
-from collections.abc import Callable
-from dataclasses import dataclass
-from enum import StrEnum
-from typing import Any, Never
+from __future__ import annotations
 
-from luna.cli import (
-	Command,
-	HelpRequested,
-	Kind,
-	ParseError,
-	Program,
-	Runnable,
-	Value,
-	description,
-)
+import argparse
+from dataclasses import dataclass
+from typing import Never, TYPE_CHECKING
+
+from luna.cli.conversion import escape
+from luna.cli.runnable import Runnable, description
+
+if TYPE_CHECKING:
+	from luna.cli.command import Command
+	from luna.cli.program import Program
 
 COMMAND_DESTINATION = "__command"
 
@@ -23,6 +19,19 @@ class ParseResult:
 	program: type[Program]
 	command: type[Command] | None
 	values: dict[str, object]
+
+
+class ParseError(Exception):
+	def __init__(self, message: str, usage: str):
+		super().__init__(message)
+		self.message = message
+		self.usage = usage
+
+
+class HelpRequested(Exception):
+	def __init__(self, help: str):
+		super().__init__(help)
+		self.help = help
 
 
 class ArgumentParser(argparse.ArgumentParser):
@@ -105,104 +114,7 @@ def add_help(parser: argparse.ArgumentParser):
 def add_values(parser: argparse.ArgumentParser, runnable: type[Runnable]):
 	parser._positionals.title = "arguments"
 	for value in runnable.settled().values():
-		if value.kind is Kind.ARGUMENT:
-			add_argument(parser, value)
-		else:
-			add_option(parser, value)
-
-
-def add_argument(parser: argparse.ArgumentParser, value: Value):
-	if value.required:
-		parser.add_argument(
-			value.name,
-			type=converter(value.type),
-			metavar=f"<{value.name}>",
-			help=help_text(value),
-		)
-	else:
-		parser.add_argument(
-			value.name,
-			type=converter(value.type),
-			nargs="?",
-			default=value.initial,
-			metavar=f"<{value.name}>",
-			help=help_text(value),
-		)
-
-
-def add_option(parser: argparse.ArgumentParser, value: Value):
-	option_strings = [f"--{value.name}"]
-	if value.short is not None:
-		option_strings.append(f"-{value.short}")
-
-	if value.flag:
-		parser.add_argument(
-			*option_strings,
-			dest=value.name,
-			action="store_true",
-			default=value.initial,
-			help=help_text(value),
-		)
-	elif value.repeated:
-		parser.add_argument(
-			*option_strings,
-			dest=value.name,
-			action="append",
-			type=converter(value.item_type),
-			default=None,
-			metavar=f"<{value.name}>",
-			help=help_text(value),
-		)
-	else:
-		parser.add_argument(
-			*option_strings,
-			dest=value.name,
-			type=converter(value.type),
-			required=value.required,
-			default=None if value.required else value.initial,
-			metavar=f"<{value.name}>",
-			help=help_text(value),
-		)
-
-
-def converter(kind: Any) -> Callable[[str], object]:
-	if isinstance(kind, type) and issubclass(kind, StrEnum):
-		return choice_converter(kind)
-	return kind
-
-
-def choice_converter(choices: type[StrEnum]) -> Callable[[str], object]:
-	def convert(text: str) -> StrEnum:
-		try:
-			return choices(text)
-		except ValueError:
-			raise argparse.ArgumentTypeError(
-				f"invalid choice: {text!r} (choose from {listing(choices)})"
-			) from None
-
-	return convert
-
-
-def help_text(value: Value) -> str | None:
-	help = escape(value.help)
-	item_type = value.item_type
-	if not (isinstance(item_type, type) and issubclass(item_type, StrEnum)):
-		return help
-
-	choices = f"choices: {listing(item_type)}"
-	if help is None:
-		return choices
-	return f"{help} ({choices})"
-
-
-def listing(choices: type[StrEnum]) -> str:
-	return ", ".join(member.value for member in choices)
-
-
-def escape(help: str | None) -> str | None:
-	if help is None:
-		return None
-	return help.replace("%", "%%")
+		value.add_to(parser)
 
 
 def parse_program(program: type[Program], argv: list[str]) -> ParseResult:
@@ -231,11 +143,4 @@ def parse_values(
 	namespace: argparse.Namespace,
 	runnable: type[Runnable],
 ) -> dict[str, object]:
-	parsed = vars(namespace)
-	values = {}
-	for value in runnable.settled().values():
-		parsed_value = parsed[value.name]
-		if value.repeated and parsed_value is None:
-			parsed_value = value.initial
-		values[value.name] = parsed_value
-	return values
+	return {name: value.parsed(namespace) for name, value in runnable.settled().items()}
