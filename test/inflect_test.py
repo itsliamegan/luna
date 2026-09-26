@@ -1,4 +1,4 @@
-from luna.inflect import dash, sentence, words
+from luna.inflect import count, dash, sentence, words
 from luna.test.assertion import assert_eq
 
 
@@ -28,3 +28,14 @@ def test_joins_names_with_dashes():
 	assert_eq(dash("_private"), "private")
 	assert_eq(dash("a__b"), "a-b")
 	assert_eq(dash("title"), "title")
+
+
+def test_counts_with_a_singular_or_plural_unit():
+	assert_eq(count(1, "item"), "1 item")
+	assert_eq(count(0, "item"), "0 items")
+	assert_eq(count(3, "item"), "3 items")
+
+
+def test_counts_with_an_irregular_plural():
+	assert_eq(count(1, "entry", "entries"), "1 entry")
+	assert_eq(count(2, "entry", "entries"), "2 entries")

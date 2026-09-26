@@ -9,3 +9,12 @@ def sentence(name: str) -> str:
 
 def dash(name: str) -> str:
 	return "-".join(words(name))
+
+
+def count(number: int, singular: str, plural: str | None = None) -> str:
+	if number == 1:
+		return f"1 {singular}"
+	elif plural is None:
+		return f"{number} {singular}s"
+	else:
+		return f"{number} {plural}"
