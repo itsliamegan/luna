@@ -8,8 +8,8 @@ from luna.test.assertion import assert_eq, assert_raises
 class Apply(Command):
 	name = "apply"
 	target: str = argument(default="latest")
-	dry: bool = option(short="d")
-	steps: list[int] = option()
+	dry: bool = option(default=False, short="d")
+	steps: list[int] = option(default=[])
 
 	def run(self) -> object:
 		return ("apply", self.target, self.dry, self.steps)
@@ -28,16 +28,16 @@ def test_constructs_without_argv():
 
 
 def test_applies_defaults_when_constructed():
-	apply = Apply()  # ty: ignore[missing-argument]
+	apply = Apply()
 
 	assert_eq(apply.run(), ("apply", "latest", False, []))
 
 
 def test_copies_defaults_for_each_instance():
-	first = Apply()  # ty: ignore[missing-argument]
+	first = Apply()
 	first.steps.append(1)
 
-	assert_eq(Apply().steps, [])  # ty: ignore[missing-argument]
+	assert_eq(Apply().steps, [])
 
 
 def test_rejects_unexpected_and_missing_values():

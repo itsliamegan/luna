@@ -21,7 +21,7 @@ class Copy(Program):
 	destination: str | None = argument(default=None, help="where to copy it")
 	count: int = option(default=1, short="c", help="number of copies")
 	mode: Mode = Mode.SAFE
-	verbose: bool = option(short="v")
+	verbose: bool = option(default=False, short="v")
 	tag: list[str] = option(default=["default"], short="t")
 
 	def run(self):

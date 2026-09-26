@@ -14,9 +14,9 @@ class Mode(StrEnum):
 class Show(Program):
 	name = "show"
 	count: int = option(default=1, short="c", help="number of copies")
-	verbose: bool = option(short="v")
-	all: bool = option(short="a")
-	binary: bool = option(short="b")
+	verbose: bool = option(default=False, short="v")
+	all: bool = option(default=False, short="a")
+	binary: bool = option(default=False, short="b")
 
 	def run(self):
 		pass
@@ -95,7 +95,7 @@ def test_parses_option_forms():
 def test_parses_flags():
 	class Flags(Program):
 		name = "flags"
-		quiet: bool = option()
+		quiet: bool = option(default=False)
 		loud: bool = False
 		color: bool = option(default=True)
 
@@ -112,6 +112,28 @@ def test_parses_flags():
 	)
 	assert_that(
 		"ignored explicit argument 'yes'" in parse_error(Flags, ["--quiet=yes"]).message
+	)
+
+
+def test_requires_declared_defaults_for_flags_and_lists():
+	for annotation in [bool, list[str], list[Mode]]:
+		for declared in [option(), option(short="q", help="help")]:
+			assert_eq(
+				declaration_error(declare_option(annotation, declared)),
+				f"Declared.value: option requires a declared default: {annotation!r}",
+			)
+
+	def bare():
+		class Bare(Program):
+			name = "bare"
+			quiet: bool
+
+			def run(self):
+				pass
+
+	assert_eq(
+		declaration_error(bare),
+		"Bare.quiet: option requires a declared default: <class 'bool'>",
 	)
 
 
@@ -139,8 +161,8 @@ def test_parses_lists():
 	class Lists(Program):
 		name = "lists"
 		tag: list[str] = option(default=["default"], short="t")
-		numbers: list[int] = option()
-		modes: list[Mode] = option()
+		numbers: list[int] = option(default=[])
+		modes: list[Mode] = option(default=[])
 
 		def run(self):
 			pass
@@ -161,7 +183,7 @@ def test_parses_lists():
 def test_uses_a_new_list_default_for_each_parse():
 	class Lists(Program):
 		name = "lists"
-		empty: list[str] = option()
+		empty: list[str] = option(default=[])
 		given: list[int] = option(default=[1])
 
 		def run(self):
@@ -223,7 +245,7 @@ def test_describes_options_in_help():
 		name = "choose"
 		count: int = option(default=1, short="c", help="number of copies")
 		mode: Mode = option(default=Mode.SAFE, help="how to 100% run")
-		modes: list[Mode] = option()
+		modes: list[Mode] = option(default=[])
 
 		def run(self):
 			pass
@@ -246,10 +268,10 @@ def test_accepts_supported_types():
 		maybe_text: str | None
 		maybe_number: int | None
 		maybe_mode: Mode | None
-		flag: bool
-		texts: list[str]
-		numbers: list[int]
-		modes: list[Mode]
+		flag: bool = False
+		texts: list[str] = option(default=[])
+		numbers: list[int] = option(default=[])
+		modes: list[Mode] = option(default=[])
 
 		def run(self):
 			pass
@@ -338,7 +360,10 @@ def test_validates_short_aliases():
 				(Program,),
 				{
 					"__annotations__": dict.fromkeys(shorts, bool),
-					**{name: option(short=short) for name, short in shorts.items()},
+					**{
+						name: option(default=False, short=short)
+						for name, short in shorts.items()
+					},
 					"name": "aliases",
 					"run": lambda self: None,
 				},

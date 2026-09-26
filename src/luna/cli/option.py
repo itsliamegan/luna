@@ -31,6 +31,14 @@ class Option:
 				f"unsupported option type: {declaration.annotation!r}",
 			)
 
+		if self.default is MISSING and (
+			value_type is bool or get_origin(value_type) is list
+		):
+			raise DeclarationError(
+				declaration.name,
+				f"option requires a declared default: {declaration.annotation!r}",
+			)
+
 		conversion = Conversion(value_type, nullable)
 		check_default(declaration, conversion, self.default)
 		return conversion
@@ -56,18 +64,11 @@ class Option:
 
 	@property
 	def required(self) -> bool:
-		return self.default is MISSING and not self.flag and not self.repeated
+		return self.default is MISSING
 
 	@property
 	def initial(self) -> object:
-		if self.default is not MISSING:
-			return copy(self.default)
-		elif self.flag:
-			return False
-		elif self.repeated:
-			return []
-		else:
-			return MISSING
+		return copy(self.default)
 
 
 def option(

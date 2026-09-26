@@ -13,7 +13,7 @@ class Apply(Command):
 
 	name = "apply"
 	target: str = argument(default="latest", help="migration to apply up to")
-	dry: bool = option(short="d", help="report without applying")
+	dry: bool = option(default=False, short="d", help="report without applying")
 
 	def run(self) -> object:
 		return ("apply", self.target, self.dry)
@@ -27,7 +27,7 @@ class Status(Command):
 	"""
 
 	name = "status"
-	verbose: bool = option(short="v")
+	verbose: bool = option(default=False, short="v")
 
 	def run(self) -> object:
 		return ("status", self.verbose)
@@ -240,7 +240,7 @@ def test_rejects_mixed_and_empty_programs():
 		class Mixed(Program):
 			name = "mixed"
 			commands = [Status]  # noqa: RUF012
-			verbose: bool = option()
+			verbose: bool = option(default=False)
 
 	def with_run():
 		class Mixed(Program):
@@ -257,7 +257,7 @@ def test_rejects_mixed_and_empty_programs():
 	def values_without_run():
 		class Empty(Program):
 			name = "empty"
-			verbose: bool = option()
+			verbose: bool = option(default=False)
 
 	def no_commands():
 		class Empty(Program):
