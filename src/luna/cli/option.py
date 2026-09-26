@@ -51,7 +51,8 @@ class Option:
 	def item_type(self) -> Any:
 		if self.repeated:
 			return get_args(self.type)[0]
-		return self.type
+		else:
+			return self.type
 
 	@property
 	def required(self) -> bool:
@@ -61,11 +62,12 @@ class Option:
 	def initial(self) -> object:
 		if self.default is not MISSING:
 			return copy(self.default)
-		if self.flag:
+		elif self.flag:
 			return False
-		if self.repeated:
+		elif self.repeated:
 			return []
-		return MISSING
+		else:
+			return MISSING
 
 
 def option(

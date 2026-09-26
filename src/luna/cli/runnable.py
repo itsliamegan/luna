@@ -65,7 +65,8 @@ class Runnable(ABC):
 def declared_value(default: object) -> Argument | Option:
 	if isinstance(default, Argument | Option):
 		return default
-	return Option(default)
+	else:
+		return Option(default)
 
 
 def settle(declaration: Declaration[Conversion]) -> Conversion:
@@ -76,6 +77,7 @@ def description(owner: type) -> str | None:
 	docstring = vars(owner).get("__doc__")
 	if docstring is None:
 		return None
+
 	return inspect.cleandoc(docstring)
 
 

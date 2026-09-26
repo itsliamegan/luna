@@ -26,14 +26,13 @@ def check_default(
 ):
 	if default is MISSING:
 		return
-	if default is None:
-		if conversion.nullable:
-			return
-		raise DeclarationError(
-			declaration.name,
-			f"default None requires a nullable type: {declaration.annotation!r}",
-		)
-	if not matches(conversion.type, default):
+	elif default is None:
+		if not conversion.nullable:
+			raise DeclarationError(
+				declaration.name,
+				f"default None requires a nullable type: {declaration.annotation!r}",
+			)
+	elif not matches(conversion.type, default):
 		raise DeclarationError(
 			declaration.name,
 			f"default {default!r} does not match type {declaration.annotation!r}",
@@ -46,4 +45,5 @@ def matches(annotation: Any, default: object) -> bool:
 		return type(default) is list and all(
 			type(item) is item_type for item in default
 		)
-	return type(default) is annotation
+	else:
+		return type(default) is annotation
