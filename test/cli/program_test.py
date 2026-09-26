@@ -110,9 +110,16 @@ def test_accepts_only_help_before_command():
 
 
 def test_reports_command_errors_with_command_usage():
-	error = parse_error(Migrate, ["apply", "v2", "--dry=yes"])
+	for argv, message in [
+		(["apply", "v2", "--dry=yes"], "ignored explicit argument 'yes'"),
+		(["apply", "--unknown"], "unrecognized arguments: --unknown"),
+		(["apply", "v2", "extra"], "unrecognized arguments: extra"),
+		(["status", "-v", "-x", "y"], "unrecognized arguments: -x y"),
+	]:
+		error = parse_error(Migrate, argv)
 
-	assert_that(error.usage.startswith("usage: migrate apply"))
+		assert_that(error.usage.startswith(f"usage: migrate {argv[0]} "))
+		assert_that(message in error.message)
 
 
 def test_uses_program_and_command_names_verbatim():
@@ -215,9 +222,9 @@ def test_main_reports_parse_errors():
 		(Migrate, [], "usage: migrate", "migrate: error: the following"),
 		(
 			Migrate,
-			["apply", "-d=x"],
+			["apply", "-x"],
 			"usage: migrate apply",
-			"migrate: error: argument",
+			"migrate: error: unrecognized arguments: -x",
 		),
 	]:
 		stdout = StringIO()

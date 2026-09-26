@@ -1,5 +1,5 @@
 import argparse
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Any, Never, TYPE_CHECKING
@@ -39,6 +39,20 @@ class HelpRequested(Exception):
 class ArgumentParser(argparse.ArgumentParser):
 	def error(self, message: str) -> Never:
 		raise ParseError(message, self.format_usage())
+
+
+class CommandParser(ArgumentParser):
+	# argparse parses commands with parse_known_args and reports leftover
+	# arguments from the program's parser, which prints the program's usage.
+	def parse_known_args(
+		self,
+		args: Iterable[str] | None = None,
+		namespace: Any = None,
+	) -> tuple[Any, list[str]]:
+		namespace, extras = super().parse_known_args(args, namespace)
+		if extras:
+			self.error(f"unrecognized arguments: {" ".join(extras)}")
+		return namespace, extras
 
 
 class HelpAction(argparse.Action):
@@ -90,6 +104,7 @@ def add_commands(parser: ArgumentParser, commands: list[type[Command]]):
 	subparsers = parser.add_subparsers(
 		dest=COMMAND_DESTINATION,
 		required=True,
+		parser_class=CommandParser,
 		metavar="<command>",
 	)
 	for command in commands:
