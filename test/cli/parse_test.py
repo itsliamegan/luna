@@ -38,7 +38,7 @@ class Move(Command):
 
 class Files(Program):
 	name = "files"
-	commands = [Move]  # noqa: RUF012
+	commands = (Move,)
 
 
 def test_parses_arguments_and_options_together():

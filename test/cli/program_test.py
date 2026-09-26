@@ -37,7 +37,7 @@ class Migrate(Program):
 	"""Manage database migrations."""
 
 	name = "migrate"
-	commands = [Apply, Status]  # noqa: RUF012
+	commands = (Apply, Status)
 
 
 class Backup(Program):
@@ -131,7 +131,7 @@ def test_uses_program_and_command_names_verbatim():
 
 	class Files(Program):
 		name = "file-tool"
-		commands = [ShowFile]  # noqa: RUF012
+		commands = (ShowFile,)
 
 	assert_that(parse(Files, ["show_file"]).command is ShowFile)
 	assert_that(parse_error(Files, ["show-file"]).usage.startswith("usage: file-tool"))
@@ -246,13 +246,13 @@ def test_rejects_mixed_and_empty_programs():
 	def with_values():
 		class Mixed(Program):
 			name = "mixed"
-			commands = [Status]  # noqa: RUF012
+			commands = (Status,)
 			verbose: bool = option(default=False)
 
 	def with_run():
 		class Mixed(Program):
 			name = "mixed"
-			commands = [Status]  # noqa: RUF012
+			commands = (Status,)
 
 			def run(self):
 				pass
@@ -269,7 +269,7 @@ def test_rejects_mixed_and_empty_programs():
 	def no_commands():
 		class Empty(Program):
 			name = "empty"
-			commands = []  # noqa: RUF012
+			commands = ()
 
 	for declare in [with_values, with_run]:
 		assert_eq(
@@ -291,7 +291,7 @@ def test_rejects_invalid_commands():
 	def not_a_command():
 		class Tools(Program):
 			name = "tools"
-			commands = [Status, Backup]  # noqa: RUF012
+			commands = (Status, Backup)
 
 	def duplicate():
 		class Again(Command):
@@ -302,7 +302,7 @@ def test_rejects_invalid_commands():
 
 		class Tools(Program):
 			name = "tools"
-			commands = [Status, Again]  # noqa: RUF012
+			commands = (Status, Again)
 
 	assert_that(
 		declaration_error(not_a_command).startswith(

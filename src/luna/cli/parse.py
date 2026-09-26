@@ -100,7 +100,7 @@ def create_parser(runnable: type[Runnable]) -> ArgumentParser:
 	return parser
 
 
-def add_commands(parser: ArgumentParser, commands: list[type[Command]]):
+def add_commands(parser: ArgumentParser, commands: tuple[type[Command], ...]):
 	subparsers = parser.add_subparsers(
 		dest=COMMAND_DESTINATION,
 		required=True,

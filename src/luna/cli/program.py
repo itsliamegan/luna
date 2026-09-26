@@ -8,7 +8,7 @@ from luna.declarative import check_single_base
 
 
 class Program(Runnable):
-	commands: ClassVar[list[type[Command]]] = []
+	commands: ClassVar[tuple[type[Command], ...]] = ()
 
 	def __init_subclass__(cls, **keywords: Any):
 		super().__init_subclass__(**keywords)
