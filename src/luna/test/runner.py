@@ -8,27 +8,36 @@ import sys
 import traceback
 from types import ModuleType
 
-from luna.cli import Argument, Option, Program
+from luna.cli import Program, argument, option
 from luna.test import Case, Error, Fail, Filter, Output, Pass, Result, Suite, Test
 from luna.test.reporting import Capture, report
 
 
-def main(
-	pattern: str = "*",
-	capture: Capture = Capture.ALWAYS,
-	jobs: int | None = None,
-):
-	if pattern == "*":
-		filter = EmptyFilter()
-	else:
-		filter = TestNameFilter(pattern)
+class LunaTest(Program):
+	name = "luna test"
+	pattern: str = argument(
+		default="*",
+		help="only run tests matching this name, if provided",
+	)
+	capture: Capture = option(default=Capture.ALWAYS, help="when to capture output")
+	jobs: int | None = option(
+		default=None,
+		short="j",
+		help="maximum number of tests to run in parallel",
+	)
 
-	suite = discover(Path.cwd().joinpath("test"))
-	results = Runner(jobs).run(suite, filter)
+	def run(self):
+		if self.pattern == "*":
+			filter = EmptyFilter()
+		else:
+			filter = TestNameFilter(self.pattern)
 
-	passed = report(results, capture)
-	if not passed:
-		raise SystemExit(1)
+		suite = discover(Path.cwd().joinpath("test"))
+		results = Runner(self.jobs).run(suite, filter)
+
+		passed = report(results, self.capture)
+		if not passed:
+			raise SystemExit(1)
 
 
 @dataclass
@@ -143,31 +152,4 @@ def import_from_file(path: Path, module_name: str) -> ModuleType:
 
 
 if __name__ == "__main__":
-	program = Program(
-		"luna test",
-		main,
-		arguments=[
-			Argument(
-				"pattern",
-				required=False,
-				default="*",
-				help="only run tests matching this name, if provided",
-			)
-		],
-		options=[
-			Option(
-				"capture",
-				type=Capture,
-				default=Capture.ALWAYS,
-				help="when to capture output (always, pass, never)",
-			),
-			Option(
-				"jobs",
-				short="j",
-				type=int,
-				default=None,
-				help="maximum number of tests to run in parallel",
-			),
-		],
-	)
-	program.run(sys.argv)
+	LunaTest.main(sys.argv)

@@ -1,18 +1,25 @@
-from __future__ import annotations
-
 import argparse
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
-from typing import Never, cast, get_args, get_origin
+from enum import StrEnum
+from typing import Any, Never, TYPE_CHECKING
 
-from luna.cli import Argument, Command, Option, Program
+from luna.cli.argument import Argument
+from luna.cli.conversion import choices
+from luna.cli.option import Option
+from luna.cli.runnable import Runnable, description
+
+if TYPE_CHECKING:
+	from luna.cli.command import Command
+	from luna.cli.program import Program
 
 COMMAND_DESTINATION = "__command"
 
 
 @dataclass
 class ParseResult:
-	program: Program
-	command: Command | None
+	program: type[Program]
+	command: type[Command] | None
 	values: dict[str, object]
 
 
@@ -32,6 +39,20 @@ class HelpRequested(Exception):
 class ArgumentParser(argparse.ArgumentParser):
 	def error(self, message: str) -> Never:
 		raise ParseError(message, self.format_usage())
+
+
+class CommandParser(ArgumentParser):
+	# argparse parses commands with parse_known_args and reports leftover
+	# arguments from the program's parser, which prints the program's usage.
+	def parse_known_args(
+		self,
+		args: Iterable[str] | None = None,
+		namespace: Any = None,
+	) -> tuple[Any, list[str]]:
+		namespace, extras = super().parse_known_args(args, namespace)
+		if extras:
+			self.error(f"unrecognized arguments: {" ".join(extras)}")
+		return namespace, extras
 
 
 class HelpAction(argparse.Action):
@@ -60,17 +81,18 @@ class HelpAction(argparse.Action):
 		raise HelpRequested(parser.format_help())
 
 
-def parse(program: Program, argv: list[str]) -> ParseResult:
+def parse(program: type[Program], argv: list[str]) -> ParseResult:
 	if program.commands:
 		return parse_commands(program, argv)
 	else:
 		return parse_program(program, argv)
 
 
-def create_parser(name: str, description: str | None) -> ArgumentParser:
+def create_parser(runnable: type[Runnable]) -> ArgumentParser:
 	parser = ArgumentParser(
-		prog=name,
-		description=description,
+		prog=runnable.name,
+		description=description(runnable),
+		formatter_class=argparse.RawDescriptionHelpFormatter,
 		add_help=False,
 		color=False,
 	)
@@ -78,26 +100,23 @@ def create_parser(name: str, description: str | None) -> ArgumentParser:
 	return parser
 
 
-def add_commands(parser: ArgumentParser, commands: list[Command]) -> str:
+def add_commands(parser: ArgumentParser, commands: tuple[type[Command], ...]):
 	subparsers = parser.add_subparsers(
 		dest=COMMAND_DESTINATION,
 		required=True,
+		parser_class=CommandParser,
 		metavar="<command>",
 	)
 	for command in commands:
 		command_parser = subparsers.add_parser(
 			command.name,
-			description=command.description,
-			help=command.description,
+			description=description(command),
+			help=escape(description(command)),
+			formatter_class=argparse.RawDescriptionHelpFormatter,
 			add_help=False,
 		)
 		add_help(command_parser)
-		add_arguments_and_options(
-			command_parser,
-			command.arguments,
-			command.options,
-		)
-	return COMMAND_DESTINATION
+		add_values(command_parser, command)
 
 
 def add_help(parser: argparse.ArgumentParser):
@@ -109,34 +128,31 @@ def add_help(parser: argparse.ArgumentParser):
 	)
 
 
-def add_arguments_and_options(
-	parser: argparse.ArgumentParser,
-	arguments: list[Argument],
-	options: list[Option],
-):
+def add_values(parser: argparse.ArgumentParser, runnable: type[Runnable]):
 	parser._positionals.title = "arguments"
-	for argument in arguments:
-		add_argument(parser, argument)
-	for option in options:
-		add_option(parser, option)
+	for value in runnable.settled().values():
+		if isinstance(value, Argument):
+			add_argument(parser, value)
+		else:
+			add_option(parser, value)
 
 
 def add_argument(parser: argparse.ArgumentParser, argument: Argument):
 	if argument.required:
 		parser.add_argument(
 			argument.name,
-			type=argument.type,
+			type=converter(argument.type),
 			metavar=f"<{argument.name}>",
-			help=argument.help,
+			help=help_text(argument.help, argument.type),
 		)
 	else:
 		parser.add_argument(
 			argument.name,
-			type=argument.type,
+			type=converter(argument.type),
 			nargs="?",
-			default=argument.default,
+			default=argument.initial,
 			metavar=f"<{argument.name}>",
-			help=argument.help,
+			help=help_text(argument.help, argument.type),
 		)
 
 
@@ -145,73 +161,105 @@ def add_option(parser: argparse.ArgumentParser, option: Option):
 	if option.short is not None:
 		option_strings.append(f"-{option.short}")
 
-	if option.type is bool:
+	if option.flag:
 		parser.add_argument(
 			*option_strings,
 			dest=option.name,
 			action="store_true",
-			required=option.required,
-			default=option.default if option.default is not None else False,
-			help=option.help,
+			default=option.initial,
+			help=help_text(option.help, option.type),
 		)
-	elif get_origin(option.type) is list:
+	elif option.repeated:
 		parser.add_argument(
 			*option_strings,
 			dest=option.name,
 			action="append",
-			type=get_args(option.type)[0],
-			required=option.required,
+			type=converter(option.item_type),
 			default=None,
 			metavar=f"<{option.name}>",
-			help=option.help,
+			help=help_text(option.help, option.item_type),
 		)
 	else:
 		parser.add_argument(
 			*option_strings,
 			dest=option.name,
-			type=option.type,
+			type=converter(option.type),
 			required=option.required,
-			default=option.default,
+			default=None if option.required else option.initial,
 			metavar=f"<{option.name}>",
-			help=option.help,
+			help=help_text(option.help, option.type),
 		)
 
 
-def parse_program(program: Program, argv: list[str]) -> ParseResult:
-	parser = create_parser(program.name, program.description)
-	add_arguments_and_options(parser, program.arguments, program.options)
+def converter(value_type: Any) -> Callable[[str], object]:
+	if not choices(value_type):
+		return value_type
+
+	def convert(text: str) -> StrEnum:
+		try:
+			return value_type(text)
+		except ValueError:
+			raise argparse.ArgumentTypeError(
+				f"invalid choice: {text!r} (choose from {listing(value_type)})"
+			) from None
+
+	return convert
+
+
+def help_text(help: str | None, value_type: Any) -> str | None:
+	help = escape(help)
+	if not choices(value_type):
+		return help
+
+	listed = f"choices: {listing(value_type)}"
+	if help is None:
+		return listed
+	else:
+		return f"{help} ({listed})"
+
+
+def listing(choice_type: type[StrEnum]) -> str:
+	return ", ".join(member.value for member in choice_type)
+
+
+def escape(help: str | None) -> str | None:
+	if help is None:
+		return None
+
+	return help.replace("%", "%%")
+
+
+def parse_program(program: type[Program], argv: list[str]) -> ParseResult:
+	parser = create_parser(program)
+	add_values(parser, program)
 	namespace = parser.parse_args(argv)
-	values = parse_values(namespace, program.arguments, program.options)
-	return ParseResult(program, None, values)
+	return ParseResult(program, None, parse_values(namespace, program))
 
 
-def parse_commands(program: Program, argv: list[str]) -> ParseResult:
-	parser = create_parser(program.name, program.description)
-	destination = add_commands(parser, program.commands)
+def parse_commands(program: type[Program], argv: list[str]) -> ParseResult:
+	parser = create_parser(program)
+	add_commands(parser, program.commands)
 
 	if argv and argv[0] == "--":
 		parser.error("argument command: invalid choice: '--'")
 
 	namespace = parser.parse_args(argv)
-	command_name = getattr(namespace, destination)
+	command_name = getattr(namespace, COMMAND_DESTINATION)
 	command = next(
 		command for command in program.commands if command.name == command_name
 	)
-	values = parse_values(namespace, command.arguments, command.options)
-	return ParseResult(program, command, values)
+	return ParseResult(program, command, parse_values(namespace, command))
 
 
 def parse_values(
 	namespace: argparse.Namespace,
-	arguments: list[Argument],
-	options: list[Option],
+	runnable: type[Runnable],
 ) -> dict[str, object]:
-	parsed = vars(namespace)
-	values = {argument.name: parsed[argument.name] for argument in arguments}
-	for option in options:
-		value = parsed[option.name]
-		if get_origin(option.type) is list and value is None:
-			default = cast(list[object] | None, option.default)
-			value = [] if default is None else list(default)
-		values[option.name] = value
+	values = {}
+	for name, value in runnable.settled().items():
+		parsed = getattr(namespace, name)
+		if isinstance(value, Option) and value.repeated and parsed is None:
+			values[name] = value.initial
+		else:
+			values[name] = parsed
 	return values

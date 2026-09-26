@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 
 from luna.test import Error, Pass
 from luna.test.assertion import assert_eq, assert_that
-from luna.test.runner import EmptyFilter, Runner, discover, main
+from luna.test.runner import EmptyFilter, LunaTest, Runner, discover
 
 
 def test_discovers_nested_tests():
@@ -93,7 +93,7 @@ def test_formats_error_tracebacks_without_runner_frames():
 	assert_that("run_case" not in result.error)
 
 
-def test_main_reports_nested_test_names():
+def test_reports_nested_test_names():
 	with TemporaryDirectory() as temporary_dir:
 		root = Path(temporary_dir)
 		test_dir = root.joinpath("test", "unit", "models")
@@ -105,7 +105,7 @@ def test_main_reports_nested_test_names():
 		try:
 			with redirect_stdout(output):
 				os.chdir(root)
-				main(jobs=1)
+				LunaTest(jobs=1).run()
 		finally:
 			os.chdir(cwd)
 
