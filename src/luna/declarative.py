@@ -1,5 +1,6 @@
 from annotationlib import Format, ForwardRef, get_annotations
 from collections.abc import Callable, Collection
+from dataclasses import dataclass
 from types import NoneType
 from typing import ClassVar, Union, get_args, get_origin
 
@@ -13,8 +14,15 @@ class DeclarationError(Exception):
 		self.detail = detail
 
 
+@dataclass(init=False, eq=False)
 class Declaration[T]:
-	value: T
+	owner: type
+	name: str
+	annotation: object
+	default: object
+	settle: Callable[[Declaration[T]], T]
+	error: type[Exception]
+	settled: bool
 
 	def __init__(
 		self,
