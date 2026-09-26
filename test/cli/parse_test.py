@@ -18,12 +18,12 @@ class Copy(Program):
 
 	name = "copy"
 	source: str = argument(help="file to copy")
-	destination: str | None = argument(None, help="where to copy it")
-	count: int = option(1, short="c", help="number of copies")
+	destination: str | None = argument(default=None, help="where to copy it")
+	count: int = option(default=1, short="c", help="number of copies")
 	verbose: bool = option(short="v")
 	all: bool = option(short="a")
 	binary: bool = option(short="b")
-	tag: list[str] = option(["default"], short="t")
+	tag: list[str] = option(default=["default"], short="t")
 
 	def run(self):
 		pass
@@ -133,7 +133,7 @@ def test_parses_value_kinds():
 	class Kinds(Program):
 		name = "kinds"
 		positional: str = argument()
-		specified: int = option(1)
+		specified: int = option(default=1)
 		plain: int = 2
 		required: int
 
@@ -154,9 +154,9 @@ def test_parses_value_kinds():
 def test_parses_nullable_and_enum_values():
 	class Values(Program):
 		name = "values"
-		mode: Mode = argument(Mode.SAFE)
+		mode: Mode = argument(default=Mode.SAFE)
 		limit: int | None = None
-		fallback: Mode | None = option(None)
+		fallback: Mode | None = option(default=None)
 		modes: list[Mode] = option()
 
 		def run(self):
@@ -188,7 +188,7 @@ def test_uses_a_new_list_default_for_each_parse():
 	class Lists(Program):
 		name = "lists"
 		empty: list[str] = option()
-		given: list[int] = option([1])
+		given: list[int] = option(default=[1])
 
 		def run(self):
 			pass
@@ -207,7 +207,7 @@ def test_uses_names_verbatim():
 
 		name = "export_report"
 		output_path: str = argument(help="where to write")
-		page_size: int = option(10, help="rows per page")
+		page_size: int = option(default=10, help="rows per page")
 
 		def run(self):
 			pass
@@ -243,7 +243,7 @@ def test_returns_help_message():
 def test_lists_enum_choices_in_help():
 	class Choose(Program):
 		name = "choose"
-		mode: Mode = option(Mode.SAFE, help="how to 100% run")
+		mode: Mode = option(default=Mode.SAFE, help="how to 100% run")
 		modes: list[Mode] = option()
 
 		def run(self):

@@ -16,12 +16,12 @@ from luna.test.reporting import Capture, report
 class LunaTest(Program):
 	name = "luna test"
 	pattern: str = argument(
-		"*",
+		default="*",
 		help="only run tests matching this name, if provided",
 	)
-	capture: Capture = option(Capture.ALWAYS, help="when to capture output")
+	capture: Capture = option(default=Capture.ALWAYS, help="when to capture output")
 	jobs: int | None = option(
-		None,
+		default=None,
 		short="j",
 		help="maximum number of tests to run in parallel",
 	)

@@ -47,11 +47,16 @@ class Specifier:
 	help: str | None = None
 
 
-def argument(default: object = MISSING, help: str | None = None) -> Any:
+def argument(
+	*,
+	default: object = MISSING,
+	help: str | None = None,
+) -> Any:
 	return Specifier(Kind.ARGUMENT, default, None, help)
 
 
 def option(
+	*,
 	default: object = MISSING,
 	short: str | None = None,
 	help: str | None = None,

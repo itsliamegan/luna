@@ -16,7 +16,7 @@ class Apply(Command):
 	"""Apply pending migrations."""
 
 	name = "apply"
-	target: str = argument("latest")
+	target: str = argument(default="latest")
 	dry: bool = option(short="d")
 	steps: list[int] = option()
 
@@ -43,7 +43,7 @@ class Backup(Program):
 
 	name = "backup"
 	dry: bool = option(short="d")
-	keep: int = option(7, short="k")
+	keep: int = option(default=7, short="k")
 
 	def run(self) -> object:
 		return ("backup", self.dry, self.keep)
@@ -347,7 +347,7 @@ def test_requires_required_arguments_first():
 	def declare():
 		class Order(Command):
 			name = "order"
-			first: str = argument("x")
+			first: str = argument(default="x")
 			second: str = argument()
 
 	assert_eq(
@@ -362,9 +362,9 @@ def test_accepts_supported_types():
 		text: str = argument()
 		number: int = argument()
 		mode: Mode = argument()
-		maybe_text: str | None = argument(None)
-		maybe_number: int | None = argument(None)
-		maybe_mode: Mode | None = argument(None)
+		maybe_text: str | None = argument(default=None)
+		maybe_number: int | None = argument(default=None)
+		maybe_mode: Mode | None = argument(default=None)
 		flag: bool = option()
 		texts: list[str] = option()
 		numbers: list[int] = option()
@@ -430,7 +430,7 @@ def test_rejects_mismatched_defaults():
 				(Command,),
 				{
 					"__annotations__": {"value": annotation},
-					"value": option(default),
+					"value": option(default=default),
 					"name": "defaults",
 				},
 			)
