@@ -43,7 +43,8 @@ class Program(Runnable):
 
 		if result.command is not None:
 			return result.command(**result.values).run()
-		return result.program(**result.values).run()
+		else:
+			return result.program(**result.values).run()
 
 
 def check_commands(program: type[Program]):

@@ -1,14 +1,7 @@
-import argparse
 from copy import copy
 from typing import Any, get_args, get_origin
 
-from luna.cli.conversion import (
-	Conversion,
-	check_default,
-	converter,
-	help_text,
-	scalar,
-)
+from luna.cli.conversion import Conversion, check_default, scalar
 from luna.declarative import Declaration, DeclarationError, MISSING, split_nullable
 
 
@@ -73,47 +66,6 @@ class Option:
 		if self.repeated:
 			return []
 		return MISSING
-
-	def add_to(self, parser: argparse.ArgumentParser):
-		option_strings = [f"--{self.name}"]
-		if self.short is not None:
-			option_strings.append(f"-{self.short}")
-
-		if self.flag:
-			parser.add_argument(
-				*option_strings,
-				dest=self.name,
-				action="store_true",
-				default=self.initial,
-				help=help_text(self.help, self.type),
-			)
-		elif self.repeated:
-			parser.add_argument(
-				*option_strings,
-				dest=self.name,
-				action="append",
-				type=converter(self.item_type),
-				default=None,
-				metavar=f"<{self.name}>",
-				help=help_text(self.help, self.item_type),
-			)
-		else:
-			parser.add_argument(
-				*option_strings,
-				dest=self.name,
-				type=converter(self.type),
-				required=self.required,
-				default=None if self.required else self.initial,
-				metavar=f"<{self.name}>",
-				help=help_text(self.help, self.type),
-			)
-
-	def parsed(self, namespace: argparse.Namespace) -> object:
-		value = getattr(namespace, self.name)
-		# Supplied list values replace the default rather than extending it.
-		if self.repeated and value is None:
-			return self.initial
-		return value
 
 
 def option(

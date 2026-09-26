@@ -1,10 +1,12 @@
-from __future__ import annotations
-
 import argparse
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Never, TYPE_CHECKING
+from enum import StrEnum
+from typing import Any, Never, TYPE_CHECKING
 
-from luna.cli.conversion import escape
+from luna.cli.argument import Argument
+from luna.cli.conversion import choices
+from luna.cli.option import Option
 from luna.cli.runnable import Runnable, description
 
 if TYPE_CHECKING:
@@ -114,7 +116,102 @@ def add_help(parser: argparse.ArgumentParser):
 def add_values(parser: argparse.ArgumentParser, runnable: type[Runnable]):
 	parser._positionals.title = "arguments"
 	for value in runnable.settled().values():
-		value.add_to(parser)
+		if isinstance(value, Argument):
+			add_argument(parser, value)
+		else:
+			add_option(parser, value)
+
+
+def add_argument(parser: argparse.ArgumentParser, argument: Argument):
+	if argument.required:
+		parser.add_argument(
+			argument.name,
+			type=converter(argument.type),
+			metavar=f"<{argument.name}>",
+			help=help_text(argument.help, argument.type),
+		)
+	else:
+		parser.add_argument(
+			argument.name,
+			type=converter(argument.type),
+			nargs="?",
+			default=argument.initial,
+			metavar=f"<{argument.name}>",
+			help=help_text(argument.help, argument.type),
+		)
+
+
+def add_option(parser: argparse.ArgumentParser, option: Option):
+	option_strings = [f"--{option.name}"]
+	if option.short is not None:
+		option_strings.append(f"-{option.short}")
+
+	if option.flag:
+		parser.add_argument(
+			*option_strings,
+			dest=option.name,
+			action="store_true",
+			default=option.initial,
+			help=help_text(option.help, option.type),
+		)
+	elif option.repeated:
+		parser.add_argument(
+			*option_strings,
+			dest=option.name,
+			action="append",
+			type=converter(option.item_type),
+			default=None,
+			metavar=f"<{option.name}>",
+			help=help_text(option.help, option.item_type),
+		)
+	else:
+		parser.add_argument(
+			*option_strings,
+			dest=option.name,
+			type=converter(option.type),
+			required=option.required,
+			default=None if option.required else option.initial,
+			metavar=f"<{option.name}>",
+			help=help_text(option.help, option.type),
+		)
+
+
+def converter(value_type: Any) -> Callable[[str], object]:
+	if not choices(value_type):
+		return value_type
+
+	def convert(text: str) -> StrEnum:
+		try:
+			return value_type(text)
+		except ValueError:
+			raise argparse.ArgumentTypeError(
+				f"invalid choice: {text!r} (choose from {listing(value_type)})"
+			) from None
+
+	return convert
+
+
+def help_text(help: str | None, value_type: Any) -> str | None:
+	help = escape(help)
+	if not choices(value_type):
+		return help
+
+	listed = f"choices: {listing(value_type)}"
+	if help is None:
+		return listed
+	else:
+		return f"{help} ({listed})"
+
+
+def listing(choice_type: type[StrEnum]) -> str:
+	return ", ".join(member.value for member in choice_type)
+
+
+def escape(help: str | None) -> str | None:
+	if help is None:
+		return None
+
+	return help.replace("%", "%%")
 
 
 def parse_program(program: type[Program], argv: list[str]) -> ParseResult:
@@ -143,4 +240,11 @@ def parse_values(
 	namespace: argparse.Namespace,
 	runnable: type[Runnable],
 ) -> dict[str, object]:
-	return {name: value.parsed(namespace) for name, value in runnable.settled().items()}
+	values = {}
+	for name, value in runnable.settled().items():
+		parsed = getattr(namespace, name)
+		if isinstance(value, Option) and value.repeated and parsed is None:
+			values[name] = value.initial
+		else:
+			values[name] = parsed
+	return values
