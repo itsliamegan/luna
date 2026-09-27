@@ -5,7 +5,13 @@ from typing import Self
 class RaisedException[ExceptionT: BaseException]:
 	def __init__(self, exception_type: type[ExceptionT]):
 		self.exception_type = exception_type
-		self.exception: ExceptionT | None = None
+		self._exception: ExceptionT | None = None
+
+	@property
+	def exception(self) -> ExceptionT:
+		if self._exception is None:
+			raise AssertionError("no exception captured")
+		return self._exception
 
 	def __enter__(self) -> Self:
 		return self
@@ -21,7 +27,7 @@ class RaisedException[ExceptionT: BaseException]:
 		if not isinstance(exception, self.exception_type):
 			return False
 
-		self.exception = exception
+		self._exception = exception
 		return True
 
 

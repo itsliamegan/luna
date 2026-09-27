@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Any, cast
+from typing import Any
 
 from luna.cli import HelpRequested, ParseError, Program, argument
 from luna.cli.parse import parse
@@ -31,13 +31,13 @@ def declaration_error(declare: Any) -> str:
 def parse_error(program: type[Program], argv: list[str]) -> ParseError:
 	with assert_raises(ParseError) as raised:
 		parse(program, argv)
-	return cast(ParseError, raised.exception)
+	return raised.exception
 
 
 def help_for(program: type[Program]) -> str:
 	with assert_raises(HelpRequested) as raised:
 		parse(program, ["--help"])
-	return cast(HelpRequested, raised.exception).help
+	return raised.exception.help
 
 
 def declare_argument(annotation: object, specifier: object) -> Any:

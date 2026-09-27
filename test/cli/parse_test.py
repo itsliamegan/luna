@@ -1,7 +1,6 @@
 from contextlib import redirect_stderr, redirect_stdout
 from enum import StrEnum
 from io import StringIO
-from typing import cast
 
 from luna.cli import Command, HelpRequested, ParseError, Program, argument, option
 from luna.cli.parse import parse
@@ -97,7 +96,7 @@ def test_returns_help_message():
 		parse(Copy, ["--help"])
 
 	assert_eq(
-		cast(HelpRequested, raised.exception).help,
+		raised.exception.help,
 		"usage: copy [--help] [--count <count>] [--mode <mode>] [--verbose]\n"
 		"            [--tag <tag>]\n"
 		"            <source> [<destination>]\n"

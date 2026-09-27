@@ -46,6 +46,12 @@ def test_assert_raises_exposes_exception():
 	assert "not an integer" in str(raised.exception)
 
 
+def test_assert_raises_refuses_exception_before_one_is_raised():
+	with assert_raises(ValueError) as raised:
+		assert str(raised_by(lambda: raised.exception)) == "no exception captured"
+		int("not an integer")
+
+
 def test_assert_raises_fails_when_nothing_is_raised():
 	def raise_nothing():
 		with assert_raises(ValueError):

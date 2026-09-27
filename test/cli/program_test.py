@@ -1,7 +1,7 @@
 from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 import sys
-from typing import Any, cast
+from typing import Any
 
 from luna.cli import Command, HelpRequested, ParseError, Program, argument, option
 from luna.cli.parse import parse
@@ -59,13 +59,13 @@ def declaration_error(declare: Any) -> str:
 def parse_error(program: type[Program], argv: list[str]) -> ParseError:
 	with assert_raises(ParseError) as raised:
 		parse(program, argv)
-	return cast(ParseError, raised.exception)
+	return raised.exception
 
 
 def help_for(program: type[Program], argv: list[str]) -> str:
 	with assert_raises(HelpRequested) as raised:
 		parse(program, argv)
-	return cast(HelpRequested, raised.exception).help
+	return raised.exception.help
 
 
 def run_main(program: type[Program], argv: list[str]) -> tuple[object, str, str]:
@@ -236,7 +236,7 @@ def test_main_reports_parse_errors():
 		):
 			program.main(argv)
 
-		assert_eq(cast(SystemExit, raised.exception).code, 2)
+		assert_eq(raised.exception.code, 2)
 		assert_eq(stdout.getvalue(), "")
 		assert_that(stderr.getvalue().startswith(usage))
 		assert_that(f"\n{message}" in stderr.getvalue())

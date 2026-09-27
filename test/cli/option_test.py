@@ -31,13 +31,13 @@ def declaration_error(declare: Any) -> str:
 def parse_error(program: type[Program], argv: list[str]) -> ParseError:
 	with assert_raises(ParseError) as raised:
 		parse(program, argv)
-	return cast(ParseError, raised.exception)
+	return raised.exception
 
 
 def help_for(program: type[Program]) -> str:
 	with assert_raises(HelpRequested) as raised:
 		parse(program, ["--help"])
-	return cast(HelpRequested, raised.exception).help
+	return raised.exception.help
 
 
 def declare_option(annotation: object, default: object) -> Any:
