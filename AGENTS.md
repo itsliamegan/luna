@@ -2,12 +2,13 @@
 
 ## Commands
 
-- `mise run test`: Runs the entire test suite
-- `mise run test <name>`: Runs all the cases in one test file with the provided
-  name
-- `mise run lint`: Formats and lints the code
-- `mise run check`: Typechecks the code
+- `mise run test`: Run the test suite.
+- `mise run lint`: Run Ruff for formatting & linting.
+- `mise run check`: Run Ty for type checking.
 
 ## Workflow
 
-Always run the test suite, lint, and typecheck the codebase before considering any work finished.
+Always ensure the test suite passes, the formatter is clean, and the type
+checker reports no errors before considering any work complete.
+
+CI runs these steps on every pull request.
