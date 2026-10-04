@@ -1,3 +1,4 @@
+from collections.abc import Container
 from types import TracebackType
 from typing import Self
 
@@ -61,6 +62,72 @@ def assert_not_eq(actual: object, expected: object, message: str | None = None) 
 			if message is not None
 			else f"expected: different\nactual:   {actual!r}"
 		)
+
+
+def assert_in(
+	item: object,
+	container: Container[object],
+	message: str | None = None,
+):
+	if item not in container:
+		raise AssertionError(
+			message
+			if message is not None
+			else f"expected: contains {item!r}\nactual:   {container!r}"
+		)
+
+
+def assert_not_in(
+	item: object,
+	container: Container[object],
+	message: str | None = None,
+):
+	if item in container:
+		raise AssertionError(
+			message
+			if message is not None
+			else f"expected: excludes {item!r}\nactual:   {container!r}"
+		)
+
+
+def assert_is(actual: object, expected: object, message: str | None = None):
+	if actual is not expected:
+		raise AssertionError(
+			message
+			if message is not None
+			else f"expected: same object as {expected!r}\nactual:   {actual!r}"
+		)
+
+
+def assert_is_not(actual: object, expected: object, message: str | None = None):
+	if actual is expected:
+		raise AssertionError(
+			message
+			if message is not None
+			else f"expected: different object\nactual:   {actual!r}"
+		)
+
+
+def assert_not_none[T](value: T | None, message: str | None = None) -> T:
+	if value is None:
+		raise AssertionError(
+			message if message is not None else "expected: not None\nactual:   None"
+		)
+	return value
+
+
+def assert_is_instance[T](
+	value: object,
+	type_: type[T],
+	message: str | None = None,
+) -> T:
+	if not isinstance(value, type_):
+		raise AssertionError(  # noqa: TRY004
+			message
+			if message is not None
+			else f"expected: instance of {type_.__name__}\nactual:   {value!r}"
+		)
+	return value
 
 
 def assert_raises[ExceptionT: BaseException](

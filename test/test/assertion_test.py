@@ -1,7 +1,13 @@
 from luna.test.assertion import (
 	assert_eq,
+	assert_in,
+	assert_is,
+	assert_is_instance,
+	assert_is_not,
 	assert_not,
 	assert_not_eq,
+	assert_not_in,
+	assert_not_none,
 	assert_raises,
 	assert_that,
 )
@@ -25,6 +31,45 @@ def test_equality_assertions():
 	)
 	assert str(raised_by(lambda: assert_not_eq("Bob", "Bob"))) == (
 		"expected: different\nactual:   'Bob'"
+	)
+
+
+def test_membership_assertions():
+	assert_in("Alice", ["Alice", "Bob"])
+	assert_not_in("Carol", ["Alice", "Bob"])
+
+	assert str(raised_by(lambda: assert_in("Carol", ["Alice", "Bob"]))) == (
+		"expected: contains 'Carol'\nactual:   ['Alice', 'Bob']"
+	)
+	assert str(raised_by(lambda: assert_not_in("Bob", ["Alice", "Bob"]))) == (
+		"expected: excludes 'Bob'\nactual:   ['Alice', 'Bob']"
+	)
+
+
+def test_identity_assertions():
+	names = ["Alice"]
+	assert_is(names, names)
+	assert_is_not(names, ["Alice"])
+
+	assert str(raised_by(lambda: assert_is(names, ["Alice"]))) == (
+		"expected: same object as ['Alice']\nactual:   ['Alice']"
+	)
+	assert str(raised_by(lambda: assert_is_not(names, names))) == (
+		"expected: different object\nactual:   ['Alice']"
+	)
+
+
+def test_narrowing_assertions():
+	name: str | None = "Alice"
+	value: object = 1
+	assert assert_not_none(name).upper() == "ALICE"
+	assert assert_is_instance(value, int) + 1 == 2
+
+	assert str(raised_by(lambda: assert_not_none(None))) == (
+		"expected: not None\nactual:   None"
+	)
+	assert str(raised_by(lambda: assert_is_instance("Alice", int))) == (
+		"expected: instance of int\nactual:   'Alice'"
 	)
 
 
