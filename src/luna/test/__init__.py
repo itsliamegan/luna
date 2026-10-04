@@ -1,5 +1,13 @@
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Protocol
+
+
+@dataclass
+class Location:
+	path: Path
+	line: int
+	source: str
 
 
 class Output:
@@ -34,9 +42,12 @@ class Fail(Result):
 		case_index: int,
 		error: str,
 		output: Output,
+		*,
+		location: Location | None = None,
 	):
 		super().__init__(test_name, case_name, case_index, output)
 		self.error = error
+		self.location = location
 
 
 class Error(Result):

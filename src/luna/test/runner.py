@@ -3,13 +3,26 @@ from contextlib import redirect_stderr, redirect_stdout
 from dataclasses import dataclass
 from importlib.util import module_from_spec, spec_from_file_location
 from io import StringIO
+import linecache
 from pathlib import Path
 import sys
+import textwrap
 import traceback
 from types import ModuleType
 
 from luna.cli import Program, argument, option
-from luna.test import Case, Error, Fail, Filter, Output, Pass, Result, Suite, Test
+from luna.test import (
+	Case,
+	Error,
+	Fail,
+	Filter,
+	Location,
+	Output,
+	Pass,
+	Result,
+	Suite,
+	Test,
+)
 from luna.test.reporting import Capture, report
 
 
@@ -132,13 +145,34 @@ def run_case(test: Test, module: ModuleType, selection: SelectedCase) -> Result:
 	if error is None:
 		return Pass(test.name, case.name, selection.index, output)
 	if isinstance(error, AssertionError):
-		return Fail(test.name, case.name, selection.index, str(error), output)
+		return Fail(
+			test.name,
+			case.name,
+			selection.index,
+			str(error),
+			output,
+			location=failure_location(test, error),
+		)
 
 	traceback_start = error.__traceback__
 	if traceback_start is not None:
 		traceback_start = traceback_start.tb_next
 	formatted = traceback.format_exception(type(error), error, traceback_start)
 	return Error(test.name, case.name, selection.index, "".join(formatted), output)
+
+
+def failure_location(test: Test, error: AssertionError) -> Location | None:
+	# The outermost frame in the test file is the line in the test case itself,
+	# even when the assertion was raised by a helper or the code under test.
+	for frame in traceback.extract_tb(error.__traceback__):
+		if Path(frame.filename) != test.path or frame.lineno is None:
+			continue
+
+		end = frame.end_lineno or frame.lineno
+		lines = linecache.getlines(frame.filename)[frame.lineno - 1 : end]
+		source = textwrap.dedent("".join(lines)).rstrip()
+		return Location(test.path, frame.lineno, source)
+	return None
 
 
 def import_from_file(path: Path, module_name: str) -> ModuleType:

@@ -1,7 +1,8 @@
 from contextlib import redirect_stdout
 from io import StringIO
+from pathlib import Path
 
-from luna.test import Error, Fail, Output, Pass
+from luna.test import Error, Fail, Location, Output, Pass
 from luna.test.assertion import assert_eq, assert_that
 from luna.test.reporting import Capture, report
 
@@ -22,6 +23,37 @@ def test_indents_multiline_errors():
 
 	assert_that("ERROR" in lines[0])
 	assert_eq(lines[1:], ["\tfirst line", "\tsecond line"])
+
+
+def test_reports_failure_locations():
+	location = Location(
+		Path.cwd().joinpath("test", "example_test.py"),
+		7,
+		"assert (\n\t1 == 2\n)",
+	)
+	result = Fail(
+		"example_test",
+		"test_case",
+		0,
+		"",
+		Output("", ""),
+		location=location,
+	)
+
+	output = StringIO()
+	with redirect_stdout(output):
+		report([result])
+	lines = output.getvalue().splitlines()
+
+	assert_eq(
+		lines[1:],
+		[
+			"\ttest/example_test.py:7",
+			"\t    assert (",
+			"\t    \t1 == 2",
+			"\t    )",
+		],
+	)
 
 
 def test_sorts_results_by_test_name_and_case_index():
