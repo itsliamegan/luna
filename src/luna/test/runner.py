@@ -9,7 +9,18 @@ import traceback
 from types import ModuleType
 
 from luna.cli import Program, argument, option
-from luna.test import Case, Error, Fail, Filter, Output, Pass, Result, Suite, Test
+from luna.test import (
+	Case,
+	Error,
+	Fail,
+	Filter,
+	Location,
+	Output,
+	Pass,
+	Result,
+	Suite,
+	Test,
+)
 from luna.test.reporting import Capture, report
 
 
@@ -132,7 +143,14 @@ def run_case(test: Test, module: ModuleType, selection: SelectedCase) -> Result:
 	if error is None:
 		return Pass(test.name, case.name, selection.index, output)
 	if isinstance(error, AssertionError):
-		return Fail(test.name, case.name, selection.index, str(error), output)
+		return Fail(
+			test.name,
+			case.name,
+			selection.index,
+			str(error),
+			output,
+			location=Location.from_traceback(error.__traceback__, test.path),
+		)
 
 	traceback_start = error.__traceback__
 	if traceback_start is not None:

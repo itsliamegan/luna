@@ -4,7 +4,7 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from luna.test import Error, Pass
+from luna.test import Error, Fail, Pass
 from luna.test.assertion import assert_eq, assert_that
 from luna.test.runner import EmptyFilter, LunaTest, Runner, discover
 
@@ -91,6 +91,42 @@ def test_formats_error_tracebacks_without_runner_frames():
 	assert_that('raise ValueError("unexpected")' in result.error)
 	assert_that("ValueError: unexpected" in result.error)
 	assert_that("run_case" not in result.error)
+
+
+def test_locates_failures_in_test_cases():
+	with TemporaryDirectory() as temporary_dir:
+		test_dir = Path(temporary_dir).joinpath("test")
+		test_dir.mkdir()
+		path = test_dir.joinpath("failure_test.py")
+		path.write_text(
+			"def test_direct():\n"
+			"\tassert 1 == 2\n\n"
+			"def test_helper():\n"
+			"\tcheck(False)\n\n"
+			"def test_multiline():\n"
+			"\tcheck(\n"
+			"\t\tFalse\n"
+			"\t)\n\n"
+			"def check(value):\n"
+			"\tassert value\n"
+		)
+
+		results = Runner(jobs=1).run(discover(test_dir), EmptyFilter())
+
+	locations = []
+	for result in results:
+		assert isinstance(result, Fail)
+		assert result.location is not None
+		assert_eq(result.location.path, path.resolve())
+		locations.append((result.location.line, result.location.source))
+	assert_eq(
+		locations,
+		[
+			(2, "assert 1 == 2"),
+			(5, "check(False)"),
+			(8, "check(\n\tFalse\n)"),
+		],
+	)
 
 
 def test_reports_nested_test_names():

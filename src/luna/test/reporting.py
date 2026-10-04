@@ -1,5 +1,6 @@
 from collections.abc import Sequence
 from enum import StrEnum
+from pathlib import Path
 
 from luna import ansi
 from luna.ansi import Escape
@@ -28,6 +29,13 @@ def report(results: Sequence[Result], capture: Capture = Capture.ALWAYS) -> bool
 			passed = False
 
 		print(f"{desc}\t{result.test_name}:{result.case_name}")
+
+		if isinstance(result, Fail) and result.location is not None:
+			location = result.location
+			path = location.path.relative_to(Path.cwd(), walk_up=True)
+			print(f"\t{path}:{location.line}")
+			for line in location.source.splitlines():
+				print(f"\t    {line}")
 
 		if isinstance(result, (Fail, Error)) and result.error:
 			for line in result.error.splitlines():
