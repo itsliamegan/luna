@@ -148,22 +148,31 @@ def test_reports_nested_test_names():
 	assert_that("unit/models/user_test:test_create" in output.getvalue())
 
 
-def test_fails_when_no_tests_run():
-	for files, pattern in [
-		({}, None),
-		({"user_test.py": "def test_create():\n\tpass\n"}, "order"),
-	]:
-		with TemporaryDirectory() as temporary_dir:
-			root = Path(temporary_dir)
-			test_dir = root.joinpath("test")
-			test_dir.mkdir()
-			for name, source in files.items():
-				test_dir.joinpath(name).write_text(source)
+def test_fails_when_no_tests_are_found():
+	with TemporaryDirectory() as temporary_dir:
+		root = Path(temporary_dir)
+		root.joinpath("test").mkdir()
 
-			cwd = Path.cwd()
-			try:
-				os.chdir(root)
-				with redirect_stderr(StringIO()), assert_raises(SystemExit):
-					LunaTest(pattern=pattern, jobs=1).run()
-			finally:
-				os.chdir(cwd)
+		cwd = Path.cwd()
+		try:
+			os.chdir(root)
+			with redirect_stderr(StringIO()), assert_raises(SystemExit):
+				LunaTest(jobs=1).run()
+		finally:
+			os.chdir(cwd)
+
+
+def test_fails_when_no_tests_match_the_pattern():
+	with TemporaryDirectory() as temporary_dir:
+		root = Path(temporary_dir)
+		test_dir = root.joinpath("test")
+		test_dir.mkdir()
+		test_dir.joinpath("user_test.py").write_text("def test_create():\n\tpass\n")
+
+		cwd = Path.cwd()
+		try:
+			os.chdir(root)
+			with redirect_stderr(StringIO()), assert_raises(SystemExit):
+				LunaTest(pattern="order", jobs=1).run()
+		finally:
+			os.chdir(cwd)
