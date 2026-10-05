@@ -34,6 +34,29 @@ def test_equality_assertions():
 	)
 
 
+def test_equality_assertions_diff_multiline_values():
+	assert str(raised_by(lambda: assert_eq("Alice\nBob\n", "Alice\nCarol\n"))) == (
+		"expected: -, actual: +\n  Alice\n- Carol\n+ Bob"
+	)
+
+	people = [
+		{"name": "Alice", "email": "alice@example.com"},
+		{"name": "Bob", "email": "bob@example.com"},
+	]
+	expected = [
+		{"name": "Alice", "email": "alice@example.com"},
+		{"name": "Bob", "email": "bob@example.org"},
+	]
+	assert str(raised_by(lambda: assert_eq(people, expected))) == (
+		"expected: -, actual: +\n"
+		"  [{'name': 'Alice', 'email': 'alice@example.com'},\n"
+		"-  {'name': 'Bob', 'email': 'bob@example.org'}]\n"
+		"?                                         ^^\n"
+		"+  {'name': 'Bob', 'email': 'bob@example.com'}]\n"
+		"?                                        + ^"
+	)
+
+
 def test_membership_assertions():
 	assert_in("Alice", ["Alice", "Bob"])
 	assert_not_in("Carol", ["Alice", "Bob"])

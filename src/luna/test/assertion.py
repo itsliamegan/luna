@@ -1,4 +1,6 @@
 from collections.abc import Container
+from difflib import ndiff
+from pprint import pformat
 from types import TracebackType
 from typing import Self
 
@@ -49,9 +51,7 @@ def assert_not(value: object, message: str | None = None) -> None:
 def assert_eq(actual: object, expected: object, message: str | None = None) -> None:
 	if actual != expected:
 		raise AssertionError(
-			message
-			if message is not None
-			else f"expected: {expected!r}\nactual:   {actual!r}"
+			message if message is not None else difference(expected, actual)
 		)
 
 
@@ -134,3 +134,26 @@ def assert_raises[ExceptionT: BaseException](
 	exception_type: type[ExceptionT],
 ) -> RaisedException[ExceptionT]:
 	return RaisedException(exception_type)
+
+
+def difference(expected: object, actual: object) -> str:
+	if isinstance(expected, str) and isinstance(actual, str):
+		# Diff strings as text, because their repr would escape the newlines.
+		expected_text = expected
+		actual_text = actual
+	else:
+		expected_text = pformat(expected, sort_dicts=False)
+		actual_text = pformat(actual, sort_dicts=False)
+
+	if "\n" not in expected_text and "\n" not in actual_text:
+		return f"expected: {expected!r}\nactual:   {actual!r}"
+
+	# Lines keep their newlines so that a missing trailing newline counts as a
+	# change. ndiff's output lines don't end consistently, so strip them all and
+	# join with newlines.
+	lines = ndiff(
+		expected_text.splitlines(keepends=True),
+		actual_text.splitlines(keepends=True),
+	)
+	diff = "\n".join(line.rstrip("\n") for line in lines)
+	return f"expected: -, actual: +\n{diff}"
