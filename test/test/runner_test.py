@@ -157,6 +157,28 @@ def test_reports_nested_test_names():
 	assert_in("unit/models/user_test:test_create", output.getvalue())
 
 
+def test_imports_modules_from_the_project_root():
+	with TemporaryDirectory() as temporary_dir:
+		root = Path(temporary_dir)
+		root.joinpath("shared.py").write_text("VALUE = 1\n")
+		test_dir = root.joinpath("test")
+		test_dir.mkdir()
+		test_dir.joinpath("user_test.py").write_text(
+			"from shared import VALUE\n\ndef test_create():\n\tassert VALUE == 1\n"
+		)
+
+		cwd = Path.cwd()
+		output = StringIO()
+		try:
+			with redirect_stdout(output):
+				os.chdir(root)
+				LunaTest(jobs=1).run()
+		finally:
+			os.chdir(cwd)
+
+	assert_in("user_test:test_create", output.getvalue())
+
+
 def test_fails_when_no_tests_are_found():
 	with TemporaryDirectory() as temporary_dir:
 		root = Path(temporary_dir)

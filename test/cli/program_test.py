@@ -12,6 +12,7 @@ from luna.test.assertion import (
 	assert_raises,
 	assert_that,
 )
+from test.cli.support import terminal_width
 
 
 class Apply(Command):
@@ -63,13 +64,13 @@ def declaration_error(declare: Any) -> str:
 
 
 def parse_error(program: type[Program], argv: list[str]) -> ParseError:
-	with assert_raises(ParseError) as raised:
+	with terminal_width(80), assert_raises(ParseError) as raised:
 		parse(program, argv)
 	return raised.exception
 
 
 def help_for(program: type[Program], argv: list[str]) -> str:
-	with assert_raises(HelpRequested) as raised:
+	with terminal_width(80), assert_raises(HelpRequested) as raised:
 		parse(program, argv)
 	return raised.exception.help
 

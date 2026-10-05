@@ -5,6 +5,7 @@ from io import StringIO
 from luna.cli import Command, HelpRequested, ParseError, Program, argument, option
 from luna.cli.parse import parse
 from luna.test.assertion import assert_eq, assert_raises
+from test.cli.support import terminal_width
 
 
 class Mode(StrEnum):
@@ -92,7 +93,7 @@ def test_ends_option_parsing_at_terminator():
 
 
 def test_returns_help_message():
-	with assert_raises(HelpRequested) as raised:
+	with terminal_width(80), assert_raises(HelpRequested) as raised:
 		parse(Copy, ["--help"])
 
 	assert_eq(

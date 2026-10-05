@@ -4,6 +4,7 @@ from typing import Any
 from luna.cli import HelpRequested, ParseError, Program, argument
 from luna.cli.parse import parse
 from luna.test.assertion import assert_eq, assert_in, assert_raises, assert_that
+from test.cli.support import terminal_width
 
 
 class Mode(StrEnum):
@@ -35,7 +36,7 @@ def parse_error(program: type[Program], argv: list[str]) -> ParseError:
 
 
 def help_for(program: type[Program]) -> str:
-	with assert_raises(HelpRequested) as raised:
+	with terminal_width(80), assert_raises(HelpRequested) as raised:
 		parse(program, ["--help"])
 	return raised.exception.help
 
