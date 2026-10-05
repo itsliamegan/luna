@@ -103,7 +103,7 @@ def test_selects_command():
 
 
 def test_rejects_unknown_and_missing_commands():
-	for argv in [[], ["unknown"], ["--", "apply"]]:
+	for argv in [["unknown"], ["--", "apply"]]:
 		error = parse_error(Migrate, argv)
 		assert_that(error.usage.startswith("usage: migrate"))
 		assert_not_in("migrate apply", error.usage)
@@ -227,7 +227,6 @@ def test_main_prints_help():
 def test_main_reports_parse_errors():
 	for program, argv, usage, message in [
 		(Backup, ["--keep", "x"], "usage: backup", "backup: error: argument --keep"),
-		(Migrate, [], "usage: migrate", "migrate: error: the following"),
 		(
 			Migrate,
 			["apply", "-x"],
@@ -248,6 +247,24 @@ def test_main_reports_parse_errors():
 		assert_eq(stdout.getvalue(), "")
 		assert_that(stderr.getvalue().startswith(usage))
 		assert_in(f"\n{message}", stderr.getvalue())
+
+
+def test_main_prints_help_when_command_is_missing():
+	stdout = StringIO()
+	stderr = StringIO()
+	with (
+		terminal_width(80),
+		redirect_stdout(stdout),
+		redirect_stderr(stderr),
+		assert_raises(SystemExit) as raised,
+	):
+		Migrate.main([])
+
+	assert_eq(raised.exception.code, 2)
+	assert_eq(stdout.getvalue(), "")
+	assert_that(stderr.getvalue().startswith("usage: migrate"))
+	assert_in("Manage database migrations.", stderr.getvalue())
+	assert_not_in("error:", stderr.getvalue())
 
 
 def test_rejects_mixed_and_empty_programs():

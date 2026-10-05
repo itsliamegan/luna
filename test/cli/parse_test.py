@@ -3,7 +3,7 @@ from enum import StrEnum
 from io import StringIO
 
 from luna.cli import Command, HelpRequested, ParseError, Program, argument, option
-from luna.cli.parse import parse
+from luna.cli.parse import CommandMissing, parse
 from luna.test.assertion import assert_eq, assert_raises
 from test.cli.support import terminal_width
 
@@ -122,9 +122,11 @@ def test_doesnt_write_output():
 	stderr = StringIO()
 
 	with redirect_stdout(stdout), redirect_stderr(stderr):
-		for program, argv in [(Copy, []), (Files, []), (Files, ["move"])]:
+		for program, argv in [(Copy, []), (Files, ["move"])]:
 			with assert_raises(ParseError):
 				parse(program, argv)
+		with assert_raises(CommandMissing):
+			parse(Files, [])
 		for program, argv in [
 			(Copy, ["--help"]),
 			(Files, ["--help"]),

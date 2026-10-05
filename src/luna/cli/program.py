@@ -2,7 +2,7 @@ import sys
 from typing import Any, ClassVar
 
 from luna.cli.command import Command
-from luna.cli.parse import HelpRequested, ParseError, parse
+from luna.cli.parse import CommandMissing, HelpRequested, ParseError, parse
 from luna.cli.runnable import Runnable
 from luna.declarative import check_single_base
 
@@ -36,6 +36,9 @@ class Program(Runnable):
 		except HelpRequested as requested:
 			print(requested.help, end="")
 			return None
+		except CommandMissing as missing:
+			print(missing.help, end="", file=sys.stderr)
+			raise SystemExit(2) from None
 		except ParseError as error:
 			print(error.usage, end="", file=sys.stderr)
 			print(f"{cls.name}: error: {error.message}", file=sys.stderr)

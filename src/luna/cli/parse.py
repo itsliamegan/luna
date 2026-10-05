@@ -36,6 +36,12 @@ class HelpRequested(Exception):
 		self.help = help
 
 
+class CommandMissing(Exception):
+	def __init__(self, help: str):
+		super().__init__(help)
+		self.help = help
+
+
 class ArgumentParser(argparse.ArgumentParser):
 	def error(self, message: str) -> Never:
 		raise ParseError(message, self.format_usage())
@@ -240,7 +246,10 @@ def parse_commands(program: type[Program], argv: list[str]) -> ParseResult:
 	parser = create_parser(program)
 	add_commands(parser, program.commands)
 
-	if argv and argv[0] == "--":
+	if not argv:
+		raise CommandMissing(parser.format_help())
+
+	if argv[0] == "--":
 		parser.error("argument command: invalid choice: '--'")
 
 	namespace = parser.parse_args(argv)
