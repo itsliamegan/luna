@@ -137,9 +137,8 @@ def assert_raises[ExceptionT: BaseException](
 
 
 def difference(expected: object, actual: object) -> str:
-	# Strings are compared as text, because their repr would put every line on
-	# one line with escaped newlines.
 	if isinstance(expected, str) and isinstance(actual, str):
+		# Diff strings as text, because their repr would escape the newlines.
 		expected_text = expected
 		actual_text = actual
 	else:
@@ -149,9 +148,9 @@ def difference(expected: object, actual: object) -> str:
 	if "\n" not in expected_text and "\n" not in actual_text:
 		return f"expected: {expected!r}\nactual:   {actual!r}"
 
-	# ndiff ends its hint lines with a newline whatever the input, so input lines
-	# keep their own and every output line is stripped before joining. Keeping
-	# them also shows a missing trailing newline as a changed line.
+	# Lines keep their newlines so that a missing trailing newline counts as a
+	# change. ndiff's output lines don't end consistently, so strip them all and
+	# join with newlines.
 	lines = ndiff(
 		expected_text.splitlines(keepends=True),
 		actual_text.splitlines(keepends=True),
