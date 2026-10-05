@@ -4,6 +4,9 @@ version = "0.1.0"
 requires-python = ">=3.14"
 dependencies = []
 
+[project.scripts]
+luna = "luna.__main__:main"
+
 [dependency-groups]
 dev = [
     "ruff>=0.16.6",

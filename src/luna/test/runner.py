@@ -4,11 +4,10 @@ from dataclasses import dataclass
 from importlib.util import module_from_spec, spec_from_file_location
 from io import StringIO
 from pathlib import Path
-import sys
 import traceback
 from types import ModuleType
 
-from luna.cli import Program, argument, option
+from luna.cli import Command, argument, option
 from luna.test import (
 	Case,
 	Error,
@@ -24,8 +23,10 @@ from luna.test import (
 from luna.test.reporting import Capture, report
 
 
-class LunaTest(Program):
-	name = "luna test"
+class LunaTest(Command):
+	"""Run the test suite."""
+
+	name = "test"
 	pattern: str = argument(
 		default="*",
 		help="only run tests matching this name, if provided",
@@ -167,7 +168,3 @@ def import_from_file(path: Path, module_name: str) -> ModuleType:
 	module = module_from_spec(spec)
 	spec.loader.exec_module(module)
 	return module
-
-
-if __name__ == "__main__":
-	LunaTest.main(sys.argv)
