@@ -1,11 +1,11 @@
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
 import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from luna.test import Error, Fail, Pass
-from luna.test.assertion import assert_eq, assert_that
+from luna.test.assertion import assert_eq, assert_raises, assert_that
 from luna.test.runner import EmptyFilter, LunaTest, Runner, discover
 
 
@@ -146,3 +146,33 @@ def test_reports_nested_test_names():
 			os.chdir(cwd)
 
 	assert_that("unit/models/user_test:test_create" in output.getvalue())
+
+
+def test_fails_when_no_tests_are_found():
+	with TemporaryDirectory() as temporary_dir:
+		root = Path(temporary_dir)
+		root.joinpath("test").mkdir()
+
+		cwd = Path.cwd()
+		try:
+			os.chdir(root)
+			with redirect_stderr(StringIO()), assert_raises(SystemExit):
+				LunaTest(jobs=1).run()
+		finally:
+			os.chdir(cwd)
+
+
+def test_fails_when_no_tests_match_the_pattern():
+	with TemporaryDirectory() as temporary_dir:
+		root = Path(temporary_dir)
+		test_dir = root.joinpath("test")
+		test_dir.mkdir()
+		test_dir.joinpath("user_test.py").write_text("def test_create():\n\tpass\n")
+
+		cwd = Path.cwd()
+		try:
+			os.chdir(root)
+			with redirect_stderr(StringIO()), assert_raises(SystemExit):
+				LunaTest(pattern="order", jobs=1).run()
+		finally:
+			os.chdir(cwd)

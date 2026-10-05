@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from importlib.util import module_from_spec, spec_from_file_location
 from io import StringIO
 from pathlib import Path
+import sys
 import traceback
 from types import ModuleType
 
@@ -27,8 +28,8 @@ class LunaTest(Command):
 	"""Run the test suite."""
 
 	name = "test"
-	pattern: str = argument(
-		default="*",
+	pattern: str | None = argument(
+		default=None,
 		help="only run tests matching this name, if provided",
 	)
 	capture: Capture = option(default=Capture.ALWAYS, help="when to capture output")
@@ -39,13 +40,21 @@ class LunaTest(Command):
 	)
 
 	def run(self):
-		if self.pattern == "*":
+		if self.pattern is None:
 			filter = EmptyFilter()
 		else:
 			filter = TestNameFilter(self.pattern)
 
 		suite = discover(Path.cwd().joinpath("test"))
 		results = Runner(self.jobs).run(suite, filter)
+
+		if not results:
+			if self.pattern is None:
+				message = "no tests found in test/"
+			else:
+				message = f"no tests match {self.pattern!r}"
+			print(f"luna test: error: {message}", file=sys.stderr)
+			raise SystemExit(1)
 
 		passed = report(results, self.capture)
 		if not passed:
