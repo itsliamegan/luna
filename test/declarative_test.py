@@ -9,7 +9,7 @@ from luna.declarative import (
 	declarations,
 	split_nullable,
 )
-from luna.test.assertion import assert_eq, assert_raises, assert_that
+from luna.test.assertion import assert_eq, assert_is, assert_raises, assert_that
 
 
 class ExampleError(TypeError):
@@ -34,7 +34,7 @@ def test_reads_annotations_with_defaults():
 	found = declarations(Post, annotation_of, ExampleError)
 
 	assert_eq([declaration.name for declaration in found], ["title", "body"])
-	assert_that(found[0].default is MISSING)
+	assert_is(found[0].default, MISSING)
 	assert_eq(found[1].default, "")
 	assert_eq([declaration.resolve() for declaration in found], [str, str])
 
@@ -76,7 +76,7 @@ def test_resolves_pending_annotations_on_first_use():
 
 	assert_that(pending)
 	assert_that(not declaration.pending)
-	assert_that(resolved is Author)
+	assert_eq(resolved, Author)
 
 
 def test_rejects_annotations_that_never_resolve():

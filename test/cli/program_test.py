@@ -5,7 +5,13 @@ from typing import Any
 
 from luna.cli import Command, HelpRequested, ParseError, Program, argument, option
 from luna.cli.parse import parse
-from luna.test.assertion import assert_eq, assert_not, assert_raises, assert_that
+from luna.test.assertion import (
+	assert_eq,
+	assert_in,
+	assert_not_in,
+	assert_raises,
+	assert_that,
+)
 
 
 class Apply(Command):
@@ -79,7 +85,7 @@ def run_main(program: type[Program], argv: list[str]) -> tuple[object, str, str]
 def test_parses_direct_program():
 	result = parse(Backup, ["-k", "3"])
 
-	assert_that(result.program is Backup)
+	assert_eq(result.program, Backup)
 	assert_eq(result.command, None)
 	assert_eq(result.values, {"keep": 3})
 
@@ -88,10 +94,10 @@ def test_selects_command():
 	apply = parse(Migrate, ["apply", "v2", "-d"])
 	status = parse(Migrate, ["status"])
 
-	assert_that(apply.program is Migrate)
-	assert_that(apply.command is Apply)
+	assert_eq(apply.program, Migrate)
+	assert_eq(apply.command, Apply)
 	assert_eq(apply.values, {"target": "v2", "dry": True})
-	assert_that(status.command is Status)
+	assert_eq(status.command, Status)
 	assert_eq(status.values, {"verbose": False})
 
 
@@ -99,7 +105,7 @@ def test_rejects_unknown_and_missing_commands():
 	for argv in [[], ["unknown"], ["--", "apply"]]:
 		error = parse_error(Migrate, argv)
 		assert_that(error.usage.startswith("usage: migrate"))
-		assert_not("migrate apply" in error.usage)
+		assert_not_in("migrate apply", error.usage)
 
 
 def test_accepts_only_help_before_command():
@@ -119,7 +125,7 @@ def test_reports_command_errors_with_command_usage():
 		error = parse_error(Migrate, argv)
 
 		assert_that(error.usage.startswith(f"usage: migrate {argv[0]} "))
-		assert_that(message in error.message)
+		assert_in(message, error.message)
 
 
 def test_uses_program_and_command_names_verbatim():
@@ -133,7 +139,7 @@ def test_uses_program_and_command_names_verbatim():
 		name = "file-tool"
 		commands = (ShowFile,)
 
-	assert_that(parse(Files, ["show_file"]).command is ShowFile)
+	assert_eq(parse(Files, ["show_file"]).command, ShowFile)
 	assert_that(parse_error(Files, ["show-file"]).usage.startswith("usage: file-tool"))
 	assert_that(
 		help_for(Files, ["show_file", "--help"]).startswith(
@@ -154,7 +160,7 @@ def test_describes_program_and_commands_in_help():
 		"status",
 		"Report pending migrations.",
 	]:
-		assert_that(text in program_help)
+		assert_in(text, program_help)
 	for text in [
 		"usage: migrate apply",
 		"Apply pending migrations.",
@@ -163,15 +169,16 @@ def test_describes_program_and_commands_in_help():
 		"--dry, -d",
 		"report without applying",
 	]:
-		assert_that(text in command_help)
+		assert_in(text, command_help)
 
 
 def test_preserves_docstring_layout_in_help():
 	help = help_for(Migrate, ["status", "--help"])
 
-	assert_that(
+	assert_in(
 		"Report pending migrations.\n\nLists each migration that has not been "
-		"applied.\n" in help
+		"applied.\n",
+		help,
 	)
 
 
@@ -239,7 +246,7 @@ def test_main_reports_parse_errors():
 		assert_eq(raised.exception.code, 2)
 		assert_eq(stdout.getvalue(), "")
 		assert_that(stderr.getvalue().startswith(usage))
-		assert_that(f"\n{message}" in stderr.getvalue())
+		assert_in(f"\n{message}", stderr.getvalue())
 
 
 def test_rejects_mixed_and_empty_programs():

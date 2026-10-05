@@ -3,7 +3,7 @@ from typing import Any
 
 from luna.cli import HelpRequested, ParseError, Program, argument
 from luna.cli.parse import parse
-from luna.test.assertion import assert_eq, assert_raises, assert_that
+from luna.test.assertion import assert_eq, assert_in, assert_raises, assert_that
 
 
 class Mode(StrEnum):
@@ -89,8 +89,8 @@ def test_rejects_invalid_values():
 	count_error = parse_error(Copy, ["input.txt", "two"])
 	mode_error = parse_error(Copy, ["input.txt", "2", "slow"])
 
-	assert_that("invalid int value: 'two'" in count_error.message)
-	assert_that("invalid choice: 'slow' (choose from safe, fast)" in mode_error.message)
+	assert_in("invalid int value: 'two'", count_error.message)
+	assert_in("invalid choice: 'slow' (choose from safe, fast)", mode_error.message)
 
 
 def test_uses_name_as_placeholder():
@@ -104,14 +104,14 @@ def test_uses_name_as_placeholder():
 	help = help_for(Export)
 
 	assert_that(help.startswith("usage: export [--help] <output_path>\n"))
-	assert_that("  <output_path>  where to write\n" in help)
+	assert_in("  <output_path>  where to write\n", help)
 	assert_eq(parse(Export, ["out.txt"]).values, {"output_path": "out.txt"})
 
 
 def test_lists_enum_choices_in_help():
 	help = help_for(Copy)
 
-	assert_that("  <mode>         choices: safe, fast\n" in help)
+	assert_in("  <mode>         choices: safe, fast\n", help)
 
 
 def test_accepts_supported_types():

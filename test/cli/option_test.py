@@ -3,7 +3,7 @@ from typing import Any, cast
 
 from luna.cli import HelpRequested, ParseError, Program, option
 from luna.cli.parse import parse
-from luna.test.assertion import assert_eq, assert_raises, assert_that
+from luna.test.assertion import assert_eq, assert_in, assert_raises, assert_that
 
 
 class Mode(StrEnum):
@@ -110,8 +110,9 @@ def test_parses_flags():
 		parse(Flags, ["--quiet", "--loud"]).values,
 		{"quiet": True, "loud": True, "color": True},
 	)
-	assert_that(
-		"ignored explicit argument 'yes'" in parse_error(Flags, ["--quiet=yes"]).message
+	assert_in(
+		"ignored explicit argument 'yes'",
+		parse_error(Flags, ["--quiet=yes"]).message,
 	)
 
 
@@ -153,7 +154,7 @@ def test_rejects_unknown_options_and_bad_values():
 		(["--count"], "expected one argument"),
 	]:
 		error = parse_error(Show, argv)
-		assert_that(message in error.message)
+		assert_in(message, error.message)
 		assert_that(error.usage.startswith("usage: show"))
 
 
@@ -232,8 +233,8 @@ def test_uses_names_verbatim():
 	help = help_for(Export)
 
 	assert_eq(parse(Export, ["--page_size", "20"]).values, {"page_size": 20})
-	assert_that("[--page_size <page_size>]" in help)
-	assert_that("  --page_size <page_size>\n" in help)
+	assert_in("[--page_size <page_size>]", help)
+	assert_in("  --page_size <page_size>\n", help)
 	assert_that(
 		"unrecognized arguments: --page-size"
 		in parse_error(Export, ["--page-size", "20"]).message
@@ -252,11 +253,9 @@ def test_describes_options_in_help():
 
 	help = help_for(Choose)
 
-	assert_that("  --count, -c <count>  number of copies\n" in help)
-	assert_that(
-		"  --mode <mode>        how to 100% run (choices: safe, fast)\n" in help
-	)
-	assert_that("  --modes <modes>      choices: safe, fast\n" in help)
+	assert_in("  --count, -c <count>  number of copies\n", help)
+	assert_in("  --mode <mode>        how to 100% run (choices: safe, fast)\n", help)
+	assert_in("  --modes <modes>      choices: safe, fast\n", help)
 
 
 def test_accepts_supported_types():

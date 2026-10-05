@@ -3,7 +3,7 @@ from io import StringIO
 from pathlib import Path
 
 from luna.test import Error, Fail, Location, Output, Pass
-from luna.test.assertion import assert_eq, assert_that
+from luna.test.assertion import assert_eq, assert_in, assert_not_in
 from luna.test.reporting import Capture, report
 
 
@@ -21,7 +21,7 @@ def test_indents_multiline_errors():
 		report([result])
 	lines = output.getvalue().splitlines()
 
-	assert_that("ERROR" in lines[0])
+	assert_in("ERROR", lines[0])
 	assert_eq(lines[1:], ["\tfirst line", "\tsecond line"])
 
 
@@ -88,9 +88,9 @@ def test_captures_all_output():
 		report(results, Capture.ALWAYS)
 	output = stream.getvalue()
 
-	assert_that("passing output" not in output)
-	assert_that("failing output" not in output)
-	assert_that("error output" not in output)
+	assert_not_in("passing output", output)
+	assert_not_in("failing output", output)
+	assert_not_in("error output", output)
 
 
 def test_captures_failing_output():
@@ -104,9 +104,9 @@ def test_captures_failing_output():
 		report(results, Capture.PASS)
 	output = stream.getvalue()
 
-	assert_that("passing output" not in output)
-	assert_that("failing output" in output)
-	assert_that("error output" in output)
+	assert_not_in("passing output", output)
+	assert_in("failing output", output)
+	assert_in("error output", output)
 
 
 def test_captures_no_output():
@@ -120,6 +120,6 @@ def test_captures_no_output():
 		report(results, Capture.NEVER)
 	output = stream.getvalue()
 
-	assert_that("passing output" in output)
-	assert_that("failing output" in output)
-	assert_that("error output" in output)
+	assert_in("passing output", output)
+	assert_in("failing output", output)
+	assert_in("error output", output)

@@ -5,7 +5,16 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from luna.test import Error, Fail, Pass
-from luna.test.assertion import assert_eq, assert_raises, assert_that
+from luna.test.assertion import (
+	assert_eq,
+	assert_in,
+	assert_is_instance,
+	assert_not_eq,
+	assert_not_in,
+	assert_not_none,
+	assert_raises,
+	assert_that,
+)
 from luna.test.runner import EmptyFilter, LunaTest, Runner, discover
 
 
@@ -49,7 +58,7 @@ def test_runs_test_files_in_parallel():
 		results = Runner(jobs=2).run(discover(test_dir), EmptyFilter())
 
 		assert_that(all(isinstance(result, Pass) for result in results))
-		assert_that(first_pid.read_text() != second_pid.read_text())
+		assert_not_eq(first_pid.read_text(), second_pid.read_text())
 
 
 def test_imports_each_test_file_once_during_execution():
@@ -86,11 +95,11 @@ def test_formats_error_tracebacks_without_runner_frames():
 		results = Runner(jobs=1).run(discover(test_dir), EmptyFilter())
 
 	result = results[0]
-	assert isinstance(result, Error)
-	assert_that("error_test.py" in result.error)
-	assert_that('raise ValueError("unexpected")' in result.error)
-	assert_that("ValueError: unexpected" in result.error)
-	assert_that("run_case" not in result.error)
+	error = assert_is_instance(result, Error)
+	assert_in("error_test.py", error.error)
+	assert_in('raise ValueError("unexpected")', error.error)
+	assert_in("ValueError: unexpected", error.error)
+	assert_not_in("run_case", error.error)
 
 
 def test_locates_failures_in_test_cases():
@@ -115,10 +124,10 @@ def test_locates_failures_in_test_cases():
 
 	locations = []
 	for result in results:
-		assert isinstance(result, Fail)
-		assert result.location is not None
-		assert_eq(result.location.path, path.resolve())
-		locations.append((result.location.line, result.location.source))
+		failure = assert_is_instance(result, Fail)
+		location = assert_not_none(failure.location)
+		assert_eq(location.path, path.resolve())
+		locations.append((location.line, location.source))
 	assert_eq(
 		locations,
 		[
@@ -145,7 +154,7 @@ def test_reports_nested_test_names():
 		finally:
 			os.chdir(cwd)
 
-	assert_that("unit/models/user_test:test_create" in output.getvalue())
+	assert_in("unit/models/user_test:test_create", output.getvalue())
 
 
 def test_fails_when_no_tests_are_found():
