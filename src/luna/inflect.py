@@ -7,6 +7,10 @@ def sentence(name: str) -> str:
 	return text[:1].upper() + text[1:]
 
 
+def title(name: str) -> str:
+	return " ".join(word[:1].upper() + word[1:] for word in words(name))
+
+
 def dash(name: str) -> str:
 	return "-".join(words(name))
 

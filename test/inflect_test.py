@@ -1,4 +1,4 @@
-from luna.inflect import count, dash, sentence, words
+from luna.inflect import count, dash, sentence, title, words
 from luna.test.assertion import assert_eq
 
 
@@ -20,6 +20,18 @@ def test_writes_names_as_sentences():
 
 def test_leaves_the_rest_of_a_sentence_as_written():
 	assert_eq(sentence("return_to_URL"), "Return to URL")
+
+
+def test_writes_names_as_titles():
+	assert_eq(title("contact_us"), "Contact Us")
+	assert_eq(title("class_"), "Class")
+	assert_eq(title("_private"), "Private")
+	assert_eq(title("a__b"), "A B")
+	assert_eq(title("about"), "About")
+
+
+def test_leaves_the_rest_of_each_title_word_as_written():
+	assert_eq(title("return_to_URL"), "Return To URL")
 
 
 def test_joins_names_with_dashes():
