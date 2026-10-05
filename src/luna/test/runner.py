@@ -45,7 +45,11 @@ class LunaTest(Command):
 		else:
 			filter = TestNameFilter(self.pattern)
 
-		suite = discover(Path.cwd().joinpath("test"))
+		root = Path.cwd()
+		# Put the project root on the import path so that test files can import
+		# shared modules.
+		sys.path.insert(0, str(root))
+		suite = discover(root.joinpath("test"))
 		results = Runner(self.jobs).run(suite, filter)
 
 		if not results:
