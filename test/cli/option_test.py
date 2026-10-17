@@ -1,4 +1,5 @@
 from enum import StrEnum
+from pathlib import Path
 from typing import Any, cast
 
 from luna.cli import HelpRequested, ParseError, Program, option
@@ -265,13 +266,16 @@ def test_accepts_supported_types():
 		text: str
 		number: int
 		mode: Mode
+		path: Path
 		maybe_text: str | None
 		maybe_number: int | None
 		maybe_mode: Mode | None
+		maybe_path: Path | None
 		flag: bool = False
 		texts: list[str] = option(default=[])
 		numbers: list[int] = option(default=[])
 		modes: list[Mode] = option(default=[])
+		paths: list[Path] = option(default=[])
 
 		def run(self):
 			pass
@@ -282,13 +286,16 @@ def test_accepts_supported_types():
 			"--text=a",
 			"--number=1",
 			"--mode=fast",
+			"--path=d",
 			"--maybe_text=b",
 			"--maybe_number=2",
 			"--maybe_mode=safe",
+			"--maybe_path=e",
 			"--flag",
 			"--texts=c",
 			"--numbers=3",
 			"--modes=safe",
+			"--paths=f",
 		],
 	).values
 
@@ -298,14 +305,32 @@ def test_accepts_supported_types():
 			"text": "a",
 			"number": 1,
 			"mode": Mode.FAST,
+			"path": Path("d"),
 			"maybe_text": "b",
 			"maybe_number": 2,
 			"maybe_mode": Mode.SAFE,
+			"maybe_path": Path("e"),
 			"flag": True,
 			"texts": ["c"],
 			"numbers": [3],
 			"modes": [Mode.SAFE],
+			"paths": [Path("f")],
 		},
+	)
+
+
+def test_accepts_path_defaults():
+	class Open(Program):
+		name = "open"
+		source: Path = Path("input.txt")
+		includes: list[Path] = option(default=[Path("lib")])
+
+		def run(self):
+			pass
+
+	assert_eq(
+		parse(Open, []).values,
+		{"source": Path("input.txt"), "includes": [Path("lib")]},
 	)
 
 
@@ -340,8 +365,10 @@ def test_rejects_mismatched_defaults():
 		(str, 1),
 		(bool, 0),
 		(Mode, "safe"),
+		(Path, "input.txt"),
 		(list[int], [True]),
 		(list[str], ("a",)),
+		(list[Path], ["lib"]),
 		(int | None, "1"),
 	]:
 		for declared in [default, option(default=default)]:
