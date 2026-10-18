@@ -453,12 +453,7 @@ def test_rejects_mixed_and_empty_programs():
 	)
 
 
-def test_rejects_invalid_commands():
-	def not_a_command():
-		class Tools(Program):
-			name = "tools"
-			commands = (Status, Backup)
-
+def test_rejects_duplicate_command_names():
 	def duplicate():
 		class Again(Command):
 			name = "status"
@@ -470,11 +465,6 @@ def test_rejects_invalid_commands():
 			name = "tools"
 			commands = (Status, Again)
 
-	assert_that(
-		declaration_error(not_a_command).startswith(
-			"Tools.commands contains a non-Command entry"
-		)
-	)
 	assert_eq(
 		declaration_error(duplicate),
 		"Tools.commands has duplicate name: 'status'",

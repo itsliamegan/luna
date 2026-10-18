@@ -1,10 +1,10 @@
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 import os
 
 
 @contextmanager
-def terminal_width(columns: int) -> Iterator[None]:
+def terminal_width(columns: int) -> Generator[None]:
 	previous = os.environ.get("COLUMNS")
 	os.environ["COLUMNS"] = str(columns)
 	try:

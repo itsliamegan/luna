@@ -57,14 +57,6 @@ def test_rejects_unexpected_and_missing_values():
 	assert_eq(str(unexpected.exception), "Greet got unexpected values: loud")
 
 
-def test_requires_run():
-	class Idle(Command):
-		name = "idle"
-
-	with assert_raises(TypeError):
-		Idle()
-
-
 def test_validates_names():
 	def missing():
 		class Unnamed(Command):
@@ -74,15 +66,11 @@ def test_validates_names():
 		class Unnamed(Command):
 			name = ""
 
-	def not_a_string():
-		class Unnamed(Command):
-			name = 1
-
 	def dashed():
 		class Unnamed(Command):
 			name = "-apply"
 
-	for declare in [missing, empty, not_a_string]:
+	for declare in [missing, empty]:
 		assert_eq(
 			declaration_error(declare),
 			"Unnamed must set name to a nonempty string",

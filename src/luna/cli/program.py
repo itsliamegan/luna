@@ -66,11 +66,6 @@ def check_commands(program: type[Program]):
 
 	names = set()
 	for command in commands:
-		if not isinstance(command, type) or not issubclass(command, Command):
-			# Invalid declarations raise ValueError at class creation.
-			raise ValueError(  # noqa: TRY004
-				f"{program.__name__}.commands contains a non-Command entry: {command!r}"
-			)
 		if command.name in names:
 			raise ValueError(
 				f"{program.__name__}.commands has duplicate name: {command.name!r}"

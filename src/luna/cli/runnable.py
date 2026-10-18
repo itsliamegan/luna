@@ -94,7 +94,7 @@ def description(owner: type) -> str | None:
 
 def check_name(owner: type):
 	name = vars(owner).get("name")
-	if not isinstance(name, str) or not name:
+	if not name:
 		raise ValueError(f"{owner.__name__} must set name to a nonempty string")
 	if name.startswith("-"):
 		raise ValueError(f"{owner.__name__}.name must not begin with '-': {name!r}")
