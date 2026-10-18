@@ -278,7 +278,7 @@ def test_main_reports_a_command_s_status():
 	_result, stdout, stderr = run_main(Tools, ["check", "notes"])
 
 	assert_eq(stdout, "")
-	assert_eq(stderr, "tools: checked notes\n")
+	assert_eq(stderr, "checked notes\n")
 
 
 def test_main_reports_a_failure_from_a_command():
