@@ -27,8 +27,7 @@ class Apply(Command):
 
 
 class Status(Command):
-	"""
-	Report pending migrations.
+	"""Report pending migrations.
 
 	Lists each migration that has not been applied.
 	"""

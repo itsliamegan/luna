@@ -150,7 +150,7 @@ def run_case(test: Test, module: ModuleType, selection: SelectedCase) -> Result:
 			error = None
 		except AssertionError as caught:
 			error = caught
-		except Exception as caught:  # noqa: BLE001
+		except Exception as caught:
 			error = caught
 
 	output = Output(stdout.getvalue(), stderr.getvalue())

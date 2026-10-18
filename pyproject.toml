@@ -9,8 +9,8 @@ luna = "luna.__main__:main"
 
 [dependency-groups]
 dev = [
-    "ruff>=0.16.6",
-    "ty>=0.0.78",
+	"ruff>=0.16.6",
+	"ty>=0.0.80",
 ]
 
 [build-system]
@@ -24,6 +24,19 @@ target-version = "py314"
 indent-style = "tab"
 nested-string-quote-style = "preferred"
 quote-style = "double"
+
+[tool.ruff.lint]
+extend-select = [
+	"D200",
+	"D205",
+	"D209",
+	"D212",
+]
+ignore = [
+	"BLE001",
+	"G010",
+	"RUF012",
+]
 
 [tool.ruff.lint.isort]
 case-sensitive = true
