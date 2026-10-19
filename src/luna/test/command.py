@@ -6,12 +6,16 @@ import time
 
 from luna.cli import Command, argument, option
 from luna.printer import Printer
-from luna.test import capture, filter
-from luna.test.progress import Lines
+from luna.test import capture, filter, progress
 from luna.test.reporter import Reporter
 from luna.test.result import Error, Fail, Pass
 from luna.test.runner import Runner
 from luna.test.suite import Suite
+
+
+class ProgressStyle(StrEnum):
+	DOTS = "dots"
+	LINES = "lines"
 
 
 class CaptureStyle(StrEnum):
@@ -27,6 +31,10 @@ class LunaTest(Command):
 	pattern: str | None = argument(
 		default=None,
 		help="only run tests matching this name, if provided",
+	)
+	progress: ProgressStyle = option(
+		default=ProgressStyle.DOTS,
+		help="how to show progress",
 	)
 	capture: CaptureStyle = option(
 		default=CaptureStyle.ALWAYS,
@@ -54,6 +62,13 @@ class LunaTest(Command):
 			else:
 				self.fail(f"no tests match {self.pattern!r}")
 
+		printer = Printer(sys.stdout)
+		match self.progress:
+			case ProgressStyle.DOTS:
+				progress_ = progress.Dots(printer)
+			case ProgressStyle.LINES:
+				progress_ = progress.Lines(printer)
+
 		match self.capture:
 			case CaptureStyle.ALWAYS:
 				capture_ = capture.Always()
@@ -62,8 +77,7 @@ class LunaTest(Command):
 			case CaptureStyle.NEVER:
 				capture_ = capture.Never()
 
-		printer = Printer(sys.stdout)
-		reporter = Reporter(printer, Lines(printer), capture_)
+		reporter = Reporter(printer, progress_, capture_)
 		results = Runner(self.jobs).run(suite, reporter)
 		reporter.suite_finished(timedelta(seconds=time.perf_counter() - started))
 

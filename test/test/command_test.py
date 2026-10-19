@@ -6,7 +6,7 @@ from tempfile import TemporaryDirectory
 
 from luna.cli.runnable import Failure
 from luna.test.assertion import assert_in, assert_not_in, assert_raises
-from luna.test.command import LunaTest
+from luna.test.command import LunaTest, ProgressStyle
 
 
 def test_reports_nested_test_names():
@@ -23,7 +23,7 @@ def test_reports_nested_test_names():
 		try:
 			with redirect_stdout(output):
 				os.chdir(root)
-				LunaTest(jobs=1).run()
+				LunaTest(progress=ProgressStyle.LINES, jobs=1).run()
 		finally:
 			os.chdir(cwd)
 
@@ -45,7 +45,7 @@ def test_imports_modules_from_the_project_root():
 		try:
 			with redirect_stdout(output):
 				os.chdir(root)
-				LunaTest(jobs=1).run()
+				LunaTest(progress=ProgressStyle.LINES, jobs=1).run()
 		finally:
 			os.chdir(cwd)
 
@@ -69,7 +69,7 @@ def test_runs_only_files_matching_the_pattern():
 		try:
 			with redirect_stdout(output):
 				os.chdir(root)
-				LunaTest(pattern="order", jobs=1).run()
+				LunaTest(pattern="order", progress=ProgressStyle.LINES, jobs=1).run()
 		finally:
 			os.chdir(cwd)
 
