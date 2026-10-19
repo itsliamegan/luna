@@ -10,11 +10,13 @@ from luna.test.command import LunaTest
 
 
 def test_reports_nested_test_names():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
-		test_dir = root.joinpath("test", "unit", "models")
-		test_dir.mkdir(parents=True)
-		test_dir.joinpath("user_test.py").write_text("def test_create():\n\tpass\n")
+	with TemporaryDirectory() as temporary_directory:
+		root = Path(temporary_directory)
+		test_directory = root.joinpath("test", "unit", "models")
+		test_directory.mkdir(parents=True)
+		test_directory.joinpath("user_test.py").write_text(
+			"def test_create():\n\tpass\n"
+		)
 
 		cwd = Path.cwd()
 		output = StringIO()
@@ -29,12 +31,12 @@ def test_reports_nested_test_names():
 
 
 def test_imports_modules_from_the_project_root():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
+	with TemporaryDirectory() as temporary_directory:
+		root = Path(temporary_directory)
 		root.joinpath("shared.py").write_text("VALUE = 1\n")
-		test_dir = root.joinpath("test")
-		test_dir.mkdir()
-		test_dir.joinpath("user_test.py").write_text(
+		test_directory = root.joinpath("test")
+		test_directory.mkdir()
+		test_directory.joinpath("user_test.py").write_text(
 			"from shared import VALUE\n\ndef test_create():\n\tassert VALUE == 1\n"
 		)
 
@@ -51,12 +53,16 @@ def test_imports_modules_from_the_project_root():
 
 
 def test_runs_only_files_matching_the_pattern():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
-		test_dir = root.joinpath("test")
-		test_dir.mkdir()
-		test_dir.joinpath("user_test.py").write_text("def test_create():\n\tpass\n")
-		test_dir.joinpath("order_test.py").write_text("def test_place():\n\tpass\n")
+	with TemporaryDirectory() as temporary_directory:
+		root = Path(temporary_directory)
+		test_directory = root.joinpath("test")
+		test_directory.mkdir()
+		test_directory.joinpath("user_test.py").write_text(
+			"def test_create():\n\tpass\n"
+		)
+		test_directory.joinpath("order_test.py").write_text(
+			"def test_place():\n\tpass\n"
+		)
 
 		cwd = Path.cwd()
 		output = StringIO()
@@ -72,8 +78,8 @@ def test_runs_only_files_matching_the_pattern():
 
 
 def test_fails_when_no_tests_are_found():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
+	with TemporaryDirectory() as temporary_directory:
+		root = Path(temporary_directory)
 		root.joinpath("test").mkdir()
 
 		cwd = Path.cwd()
@@ -86,11 +92,13 @@ def test_fails_when_no_tests_are_found():
 
 
 def test_fails_when_no_tests_match_the_pattern():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
-		test_dir = root.joinpath("test")
-		test_dir.mkdir()
-		test_dir.joinpath("user_test.py").write_text("def test_create():\n\tpass\n")
+	with TemporaryDirectory() as temporary_directory:
+		root = Path(temporary_directory)
+		test_directory = root.joinpath("test")
+		test_directory.mkdir()
+		test_directory.joinpath("user_test.py").write_text(
+			"def test_create():\n\tpass\n"
+		)
 
 		cwd = Path.cwd()
 		try:

@@ -2,9 +2,10 @@ from pathlib import Path
 import sys
 
 from luna.cli import Command, argument, option
+from luna.test.filter import NameFilter
 from luna.test.reporting import Capture, report
 from luna.test.runner import Runner
-from luna.test.suite import Filter, Group, Suite, Test
+from luna.test.suite import Suite
 
 
 class LunaTest(Command):
@@ -41,11 +42,3 @@ class LunaTest(Command):
 		passed = report(results, self.capture)
 		if not passed:
 			raise SystemExit(1)
-
-
-class NameFilter(Filter):
-	def __init__(self, name: str):
-		self.name = name
-
-	def match(self, group: Group, test: Test) -> bool:
-		return self.name in group.name

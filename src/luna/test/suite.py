@@ -1,8 +1,9 @@
-from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
-from types import ModuleType
+
+from luna.test.filter import Filter
+from luna.test.group import Group
+from luna.test.test import Test
 
 
 @dataclass
@@ -12,10 +13,10 @@ class Suite:
 	@classmethod
 	def discover(cls, path: Path) -> Suite:
 		groups = []
-		for dir, dirs, files in path.walk():
-			dirs.sort()
+		for directory, directories, files in path.walk():
+			directories.sort()
 			for file_name in sorted(files):
-				file = Path(dir, file_name)
+				file = Path(directory, file_name)
 				if file.suffix != ".py" or not file.stem.endswith("_test"):
 					continue
 
@@ -38,29 +39,3 @@ class Suite:
 			if tests:
 				groups.append(Group(group.name, group.path, tests))
 		return Suite(groups)
-
-
-@dataclass
-class Group:
-	name: str
-	path: Path
-	tests: list[Test]
-
-	def import_module(self) -> ModuleType:
-		spec = spec_from_file_location(self.name.replace("/", "."), self.path)
-		if spec is None or spec.loader is None:
-			raise ImportError(f"Cannot load test module from {self.path}")
-
-		module = module_from_spec(spec)
-		spec.loader.exec_module(module)
-		return module
-
-
-@dataclass
-class Test:
-	name: str
-
-
-class Filter(ABC):
-	@abstractmethod
-	def match(self, group: Group, test: Test) -> bool: ...

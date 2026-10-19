@@ -2,17 +2,20 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from luna.test.assertion import assert_eq
-from luna.test.suite import Filter, Group, Suite, Test
+from luna.test.filter import Filter
+from luna.test.group import Group
+from luna.test.suite import Suite
+from luna.test.test import Test
 
 
 def test_discovers_nested_tests():
-	with TemporaryDirectory() as temporary_dir:
-		test_dir = Path(temporary_dir, "test")
-		path = Path(test_dir, "unit", "models", "user_test.py")
+	with TemporaryDirectory() as temporary_directory:
+		test_directory = Path(temporary_directory, "test")
+		path = Path(test_directory, "unit", "models", "user_test.py")
 		path.parent.mkdir(parents=True)
 		path.write_text("def test_create():\n\tpass\n")
 
-		suite = Suite.discover(test_dir)
+		suite = Suite.discover(test_directory)
 
 	assert_eq(len(suite.groups), 1)
 	assert_eq(suite.groups[0].name, "unit/models/user_test")
@@ -20,19 +23,19 @@ def test_discovers_nested_tests():
 
 
 def test_discovers_files_before_subdirectories():
-	with TemporaryDirectory() as temporary_dir:
-		test_dir = Path(temporary_dir, "test")
-		Path(test_dir, "models").mkdir(parents=True)
-		Path(test_dir, "orders").mkdir()
+	with TemporaryDirectory() as temporary_directory:
+		test_directory = Path(temporary_directory, "test")
+		Path(test_directory, "models").mkdir(parents=True)
+		Path(test_directory, "orders").mkdir()
 		for name in [
 			"user_test.py",
 			"models/user_test.py",
 			"orders/order_test.py",
 			"account_test.py",
 		]:
-			Path(test_dir, name).write_text("def test_create():\n\tpass\n")
+			Path(test_directory, name).write_text("def test_create():\n\tpass\n")
 
-		suite = Suite.discover(test_dir)
+		suite = Suite.discover(test_directory)
 
 	names = []
 	for group in suite.groups:
@@ -44,16 +47,16 @@ def test_discovers_files_before_subdirectories():
 
 
 def test_discovers_tests_in_declaration_order():
-	with TemporaryDirectory() as temporary_dir:
-		test_dir = Path(temporary_dir, "test")
-		test_dir.mkdir()
-		Path(test_dir, "user_test.py").write_text(
+	with TemporaryDirectory() as temporary_directory:
+		test_directory = Path(temporary_directory, "test")
+		test_directory.mkdir()
+		Path(test_directory, "user_test.py").write_text(
 			"def test_update():\n\tpass\n\n"
 			"def test_create():\n\tpass\n\n"
 			"def test_delete():\n\tpass\n"
 		)
 
-		suite = Suite.discover(test_dir)
+		suite = Suite.discover(test_directory)
 
 	names = []
 	for test in suite.groups[0].tests:
