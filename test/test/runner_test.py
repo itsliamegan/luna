@@ -1,10 +1,9 @@
-from contextlib import redirect_stderr, redirect_stdout
 from io import StringIO
-import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from luna.test import Error, Fail, Pass
+from luna.printer import Printer
+from luna.test import capture, progress
 from luna.test.assertion import (
 	assert_eq,
 	assert_in,
@@ -12,24 +11,12 @@ from luna.test.assertion import (
 	assert_not_eq,
 	assert_not_in,
 	assert_not_none,
-	assert_raises,
 	assert_that,
 )
-from luna.test.runner import EmptyFilter, LunaTest, Runner, discover
-
-
-def test_discovers_nested_tests():
-	with TemporaryDirectory() as temporary_dir:
-		test_dir = Path(temporary_dir).joinpath("test")
-		path = test_dir.joinpath("unit", "models", "user_test.py")
-		path.parent.mkdir(parents=True)
-		path.write_text("def test_create():\n\tpass\n")
-
-		suite = discover(test_dir)
-
-	assert_eq(len(suite.tests), 1)
-	assert_eq(suite.tests[0].name, "unit/models/user_test")
-	assert_eq(suite.tests[0].cases[0].name, "test_create")
+from luna.test.reporter import Reporter
+from luna.test.result import Error, Fail, Pass
+from luna.test.runner import Runner
+from luna.test.suite import Suite
 
 
 def test_runs_test_files_in_parallel():
@@ -55,10 +42,31 @@ def test_runs_test_files_in_parallel():
 				"\tassert other.exists()\n"
 			)
 
-		results = Runner(jobs=2).run(discover(test_dir), EmptyFilter())
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, progress.Lines(printer), capture.Always())
+		results = Runner(jobs=2).run(Suite.discover(test_dir), reporter)
 
 		assert_that(all(isinstance(result, Pass) for result in results))
 		assert_not_eq(first_pid.read_text(), second_pid.read_text())
+
+
+def test_reports_groups_in_discovery_order():
+	with TemporaryDirectory() as temporary_directory:
+		test_directory = Path(temporary_directory, "test")
+		test_directory.mkdir()
+		Path(test_directory, "order_test.py").write_text(
+			"import time\n\ndef test_place():\n\ttime.sleep(0.5)\n"
+		)
+		Path(test_directory, "user_test.py").write_text("def test_create():\n\tpass\n")
+		stream = StringIO()
+		printer = Printer(stream)
+		reporter = Reporter(printer, progress.Lines(printer), capture.Always())
+
+		Runner(jobs=2).run(Suite.discover(test_directory), reporter)
+
+	lines = stream.getvalue().splitlines()
+	assert_in("order_test:test_place", lines[0])
+	assert_in("user_test:test_create", lines[1])
 
 
 def test_imports_each_test_file_once_during_execution():
@@ -77,11 +85,33 @@ def test_imports_each_test_file_once_during_execution():
 			"\tpass\n"
 		)
 
-		suite = discover(test_dir)
-		results = Runner(jobs=1).run(suite, EmptyFilter())
+		suite = Suite.discover(test_dir)
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, progress.Lines(printer), capture.Always())
+		results = Runner(jobs=1).run(suite, reporter)
 
 		assert_that(all(isinstance(result, Pass) for result in results))
 		assert_eq(imports.read_text(), "2")
+
+
+def test_captures_output_in_the_order_it_was_written():
+	with TemporaryDirectory() as temporary_directory:
+		test_directory = Path(temporary_directory, "test")
+		test_directory.mkdir()
+		Path(test_directory, "user_test.py").write_text(
+			"import sys\n\n"
+			"def test_create():\n"
+			"\tprint('first')\n"
+			"\tprint('second', file=sys.stderr)\n"
+			"\tprint('third')\n"
+		)
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, progress.Lines(printer), capture.Always())
+
+		results = Runner(jobs=1).run(Suite.discover(test_directory), reporter)
+
+	result = assert_is_instance(results[0], Pass)
+	assert_eq(result.output, "first\nsecond\nthird\n")
 
 
 def test_formats_error_tracebacks_without_runner_frames():
@@ -92,14 +122,16 @@ def test_formats_error_tracebacks_without_runner_frames():
 			'def test_error():\n\traise ValueError("unexpected")\n'
 		)
 
-		results = Runner(jobs=1).run(discover(test_dir), EmptyFilter())
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, progress.Lines(printer), capture.Always())
+		results = Runner(jobs=1).run(Suite.discover(test_dir), reporter)
 
 	result = results[0]
 	error = assert_is_instance(result, Error)
-	assert_in("error_test.py", error.error)
-	assert_in('raise ValueError("unexpected")', error.error)
-	assert_in("ValueError: unexpected", error.error)
-	assert_not_in("run_case", error.error)
+	assert_in("error_test.py", error.traceback)
+	assert_in('raise ValueError("unexpected")', error.traceback)
+	assert_in("ValueError: unexpected", error.traceback)
+	assert_not_in("run_case", error.traceback)
 
 
 def test_locates_failures_in_test_cases():
@@ -120,7 +152,9 @@ def test_locates_failures_in_test_cases():
 			"\tassert value\n"
 		)
 
-		results = Runner(jobs=1).run(discover(test_dir), EmptyFilter())
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, progress.Lines(printer), capture.Always())
+		results = Runner(jobs=1).run(Suite.discover(test_dir), reporter)
 
 	locations = []
 	for result in results:
@@ -136,74 +170,3 @@ def test_locates_failures_in_test_cases():
 			(8, "check(\n\tFalse\n)"),
 		],
 	)
-
-
-def test_reports_nested_test_names():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
-		test_dir = root.joinpath("test", "unit", "models")
-		test_dir.mkdir(parents=True)
-		test_dir.joinpath("user_test.py").write_text("def test_create():\n\tpass\n")
-
-		cwd = Path.cwd()
-		output = StringIO()
-		try:
-			with redirect_stdout(output):
-				os.chdir(root)
-				LunaTest(jobs=1).run()
-		finally:
-			os.chdir(cwd)
-
-	assert_in("unit/models/user_test:test_create", output.getvalue())
-
-
-def test_imports_modules_from_the_project_root():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
-		root.joinpath("shared.py").write_text("VALUE = 1\n")
-		test_dir = root.joinpath("test")
-		test_dir.mkdir()
-		test_dir.joinpath("user_test.py").write_text(
-			"from shared import VALUE\n\ndef test_create():\n\tassert VALUE == 1\n"
-		)
-
-		cwd = Path.cwd()
-		output = StringIO()
-		try:
-			with redirect_stdout(output):
-				os.chdir(root)
-				LunaTest(jobs=1).run()
-		finally:
-			os.chdir(cwd)
-
-	assert_in("user_test:test_create", output.getvalue())
-
-
-def test_fails_when_no_tests_are_found():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
-		root.joinpath("test").mkdir()
-
-		cwd = Path.cwd()
-		try:
-			os.chdir(root)
-			with redirect_stderr(StringIO()), assert_raises(SystemExit):
-				LunaTest(jobs=1).run()
-		finally:
-			os.chdir(cwd)
-
-
-def test_fails_when_no_tests_match_the_pattern():
-	with TemporaryDirectory() as temporary_dir:
-		root = Path(temporary_dir)
-		test_dir = root.joinpath("test")
-		test_dir.mkdir()
-		test_dir.joinpath("user_test.py").write_text("def test_create():\n\tpass\n")
-
-		cwd = Path.cwd()
-		try:
-			os.chdir(root)
-			with redirect_stderr(StringIO()), assert_raises(SystemExit):
-				LunaTest(pattern="order", jobs=1).run()
-		finally:
-			os.chdir(cwd)

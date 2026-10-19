@@ -1,7 +1,7 @@
 import sys
 
 from luna.cli import Program
-from luna.test.runner import LunaTest
+from luna.test.command import LunaTest
 
 
 class Luna(Program):
