@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from luna.test.result import Error, Fail, Pass, Result
+from luna.test.result import Error, Fail, Result
 
 
 class Capture(ABC):
@@ -10,20 +10,20 @@ class Capture(ABC):
 	def shows(self, result: Result) -> bool: ...
 
 
-class AlwaysCapture(Capture):
+class Always(Capture):
 	def shows(self, result: Result) -> bool:
 		return False
 
 
-class PassCapture(Capture):
+class Pass(Capture):
 	def shows(self, result: Result) -> bool:
 		match result:
-			case Pass():
-				return False
 			case Fail() | Error():
 				return True
+			case _:
+				return False
 
 
-class NeverCapture(Capture):
+class Never(Capture):
 	def shows(self, result: Result) -> bool:
 		return True

@@ -6,7 +6,7 @@ import time
 
 from luna.cli import Command, argument, option
 from luna.printer import Printer
-from luna.test.capture import AlwaysCapture, NeverCapture, PassCapture
+from luna.test import capture
 from luna.test.filter import NameFilter
 from luna.test.progress import Lines
 from luna.test.reporter import Reporter
@@ -57,14 +57,14 @@ class LunaTest(Command):
 
 		match self.capture:
 			case CaptureStyle.ALWAYS:
-				capture = AlwaysCapture()
+				output_capture = capture.Always()
 			case CaptureStyle.PASS:
-				capture = PassCapture()
+				output_capture = capture.Pass()
 			case CaptureStyle.NEVER:
-				capture = NeverCapture()
+				output_capture = capture.Never()
 
 		printer = Printer(sys.stdout)
-		reporter = Reporter(printer, Lines(printer), capture)
+		reporter = Reporter(printer, Lines(printer), output_capture)
 		results = Runner(self.jobs).run(suite, reporter)
 		reporter.suite_finished(timedelta(seconds=time.perf_counter() - started))
 
