@@ -21,6 +21,7 @@ class Reporter:
 	def group_finished(self, group: Group, results: Sequence[Result]):
 		self.finished.append((group, results))
 		self.progress.advance(group, results)
+		self.printer.flush()
 
 	def suite_finished(self, elapsed: timedelta):
 		self.progress.finish()

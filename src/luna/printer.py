@@ -25,6 +25,9 @@ class Printer:
 		self.stream.write("\n")
 		self.at_line_start = True
 
+	def flush(self):
+		self.stream.flush()
+
 	@contextmanager
 	def indented(self, prefix: str = "\t") -> Generator[None]:
 		self.prefixes.append(prefix)
