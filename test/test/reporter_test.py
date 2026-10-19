@@ -176,7 +176,7 @@ def test_separates_sections_and_blocks_with_blank_lines():
 	assert_in("in 1.00s", sections[3])
 
 
-def test_counts_results_by_status():
+def test_counts_results_by_kind():
 	group = Group(
 		"user_test",
 		Path("test", "user_test.py"),

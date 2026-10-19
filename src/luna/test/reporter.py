@@ -4,11 +4,12 @@ from datetime import timedelta
 from pathlib import Path
 
 from luna import ansi, inflect
+from luna.ansi import Escape
 from luna.printer import Printer
 from luna.test.capture import Capture
 from luna.test.group import Group
 from luna.test.progress import Progress
-from luna.test.result import Error, Fail, Pass, Result, Status
+from luna.test.result import Error, Fail, Pass, Result
 
 
 class Reporter:
@@ -35,13 +36,20 @@ class Reporter:
 		self.write_summary(elapsed)
 
 	def has_details(self, result: Result) -> bool:
-		if result.status.failing:
-			return True
-		else:
-			return bool(result.output) and self.capture.shows(result)
+		match result:
+			case Pass():
+				return bool(result.output) and self.capture.shows(result)
+			case Fail() | Error():
+				return True
 
 	def write_details(self, group: Group, result: Result):
-		label = ansi.escape(result.status.color, result.status.label)
+		match result:
+			case Pass():
+				label = ansi.escape(Escape.GREEN, "PASS")
+			case Fail():
+				label = ansi.escape(Escape.RED, "FAIL")
+			case Error():
+				label = ansi.escape(Escape.YELLOW, "ERROR")
 		self.printer.write(f"{label}\t{group.name}:{result.test.name}\n")
 		with self.printer.indented():
 			match result:
@@ -70,24 +78,26 @@ class Reporter:
 			self.printer.end_line()
 
 	def write_summary(self, elapsed: timedelta):
-		counts = []
-		for status in Status:
-			count = 0
-			for finished in self.finished:
-				for result in finished.results:
-					if result.status is status:
-						count += 1
-			if not count:
-				continue
+		passed = 0
+		failed = 0
+		errors = 0
+		for finished in self.finished:
+			for result in finished.results:
+				match result:
+					case Pass():
+						passed += 1
+					case Fail():
+						failed += 1
+					case Error():
+						errors += 1
 
-			match status:
-				case Status.PASS:
-					text = f"{count} passed"
-				case Status.FAIL:
-					text = f"{count} failed"
-				case Status.ERROR:
-					text = inflect.count(count, "error")
-			counts.append(ansi.escape(status.color, text))
+		counts = []
+		if passed:
+			counts.append(ansi.escape(Escape.GREEN, f"{passed} passed"))
+		if failed:
+			counts.append(ansi.escape(Escape.RED, f"{failed} failed"))
+		if errors:
+			counts.append(ansi.escape(Escape.YELLOW, inflect.count(errors, "error")))
 		self.printer.write(f"{", ".join(counts)} in {elapsed.total_seconds():.2f}s\n")
 
 
