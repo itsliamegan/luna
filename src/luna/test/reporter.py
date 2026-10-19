@@ -1,5 +1,4 @@
 from collections.abc import Sequence
-from dataclasses import dataclass
 from datetime import timedelta
 from pathlib import Path
 
@@ -17,20 +16,20 @@ class Reporter:
 		self.printer = printer
 		self.progress = progress
 		self.capture = capture
-		self.finished: list[FinishedGroup] = []
+		self.finished: list[tuple[Group, Sequence[Result]]] = []
 
 	def group_finished(self, group: Group, results: Sequence[Result]):
-		self.finished.append(FinishedGroup(group, results))
+		self.finished.append((group, results))
 		self.progress.advance(group, results)
 
 	def suite_finished(self, elapsed: timedelta):
 		self.progress.finish()
 
-		for finished in self.finished:
-			for result in finished.results:
+		for group, results in self.finished:
+			for result in results:
 				if self.has_details(result):
 					self.printer.end_line()
-					self.write_details(finished.group, result)
+					self.write_details(group, result)
 
 		self.printer.end_line()
 		self.write_summary(elapsed)
@@ -81,8 +80,8 @@ class Reporter:
 		passed = 0
 		failed = 0
 		errors = 0
-		for finished in self.finished:
-			for result in finished.results:
+		for _, results in self.finished:
+			for result in results:
 				match result:
 					case Pass():
 						passed += 1
@@ -99,9 +98,3 @@ class Reporter:
 		if errors:
 			counts.append(ansi.escape(Escape.YELLOW, inflect.count(errors, "error")))
 		self.printer.write(f"{", ".join(counts)} in {elapsed.total_seconds():.2f}s\n")
-
-
-@dataclass
-class FinishedGroup:
-	group: Group
-	results: Sequence[Result]
