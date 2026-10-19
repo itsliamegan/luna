@@ -9,7 +9,6 @@ from luna.printer import Printer
 from luna.test import capture, filter
 from luna.test.progress import Lines
 from luna.test.reporter import Reporter
-from luna.test.result import Error, Fail
 from luna.test.runner import Runner
 from luna.test.suite import Suite
 
@@ -68,6 +67,5 @@ class LunaTest(Command):
 		reporter.suite_finished(timedelta(seconds=time.perf_counter() - started))
 
 		for result in results:
-			match result:
-				case Fail() | Error():
-					raise SystemExit(1)
+			if result.status.failing:
+				raise SystemExit(1)

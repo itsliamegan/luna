@@ -7,7 +7,6 @@ from types import ModuleType
 
 from luna.test.group import Group
 from luna.test.location import Location
-from luna.test.output import Output
 from luna.test.reporter import Reporter
 from luna.test.result import Error, Fail, Pass, Result
 from luna.test.suite import Suite
@@ -36,9 +35,10 @@ def run_group(group: Group) -> list[Result]:
 
 
 def run_test(group: Group, module: ModuleType, test: Test) -> Result:
-	stdout = StringIO()
-	stderr = StringIO()
-	with redirect_stdout(stdout), redirect_stderr(stderr):
+	# Both streams write to one buffer, so the output keeps the order the test
+	# wrote in.
+	output = StringIO()
+	with redirect_stdout(output), redirect_stderr(output):
 		try:
 			impl = getattr(module, test.name)
 			impl()
@@ -48,20 +48,18 @@ def run_test(group: Group, module: ModuleType, test: Test) -> Result:
 		except Exception as caught:
 			error = caught
 
-	output = Output(stdout.getvalue(), stderr.getvalue())
 	if error is None:
-		return Pass(group.name, test.name, output)
+		return Pass(test, output.getvalue())
 	if isinstance(error, AssertionError):
 		return Fail(
-			group.name,
-			test.name,
+			test,
+			output.getvalue(),
 			str(error),
-			output,
-			location=Location.from_traceback(error.__traceback__, group.path),
+			Location.from_traceback(error.__traceback__, group.path),
 		)
 
 	traceback_start = error.__traceback__
 	if traceback_start is not None:
 		traceback_start = traceback_start.tb_next
 	formatted = traceback.format_exception(type(error), error, traceback_start)
-	return Error(group.name, test.name, "".join(formatted), output)
+	return Error(test, output.getvalue(), "".join(formatted))

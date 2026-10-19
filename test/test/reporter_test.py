@@ -9,7 +9,6 @@ from luna.test import capture
 from luna.test.assertion import assert_eq, assert_in, assert_not_in
 from luna.test.group import Group
 from luna.test.location import Location
-from luna.test.output import Output
 from luna.test.progress import Lines
 from luna.test.reporter import Reporter
 from luna.test.result import Error, Fail, Pass
@@ -18,12 +17,7 @@ from luna.test.test import Test
 
 def test_indents_multiline_errors():
 	group = Group("user_test", Path("test", "user_test.py"), [Test("test_create")])
-	result = Error(
-		"user_test",
-		"test_create",
-		"first line\nsecond line\n",
-		Output("", ""),
-	)
+	result = Error(Test("test_create"), "", "first line\nsecond line\n")
 	stream = StringIO()
 	printer = Printer(stream)
 	reporter = Reporter(printer, Lines(printer), capture.Always())
@@ -49,13 +43,7 @@ def test_reports_failure_locations():
 		7,
 		"assert (\n\t1 == 2\n)",
 	)
-	result = Fail(
-		"user_test",
-		"test_create",
-		"expected 1, got 2",
-		Output("", ""),
-		location=location,
-	)
+	result = Fail(Test("test_create"), "", "expected 1, got 2", location)
 	stream = StringIO()
 	printer = Printer(stream)
 	reporter = Reporter(printer, Lines(printer), capture.Always())
@@ -84,9 +72,9 @@ def test_captures_all_output():
 		[Test("test_create"), Test("test_update"), Test("test_delete")],
 	)
 	results = [
-		Pass("user_test", "test_create", Output("passing output\n", "")),
-		Fail("user_test", "test_update", "", Output("", "failing output\n")),
-		Error("user_test", "test_delete", "ValueError\n", Output("error output\n", "")),
+		Pass(Test("test_create"), "passing output\n"),
+		Fail(Test("test_update"), "failing output\n", "", None),
+		Error(Test("test_delete"), "error output\n", "ValueError\n"),
 	]
 	stream = StringIO()
 	printer = Printer(stream)
@@ -108,9 +96,9 @@ def test_captures_failing_output():
 		[Test("test_create"), Test("test_update"), Test("test_delete")],
 	)
 	results = [
-		Pass("user_test", "test_create", Output("passing output\n", "")),
-		Fail("user_test", "test_update", "", Output("", "failing output\n")),
-		Error("user_test", "test_delete", "ValueError\n", Output("error output\n", "")),
+		Pass(Test("test_create"), "passing output\n"),
+		Fail(Test("test_update"), "failing output\n", "", None),
+		Error(Test("test_delete"), "error output\n", "ValueError\n"),
 	]
 	stream = StringIO()
 	printer = Printer(stream)
@@ -132,9 +120,9 @@ def test_captures_no_output():
 		[Test("test_create"), Test("test_update"), Test("test_delete")],
 	)
 	results = [
-		Pass("user_test", "test_create", Output("passing output\n", "")),
-		Fail("user_test", "test_update", "", Output("", "failing output\n")),
-		Error("user_test", "test_delete", "ValueError\n", Output("error output\n", "")),
+		Pass(Test("test_create"), "passing output\n"),
+		Fail(Test("test_update"), "failing output\n", "", None),
+		Error(Test("test_delete"), "error output\n", "ValueError\n"),
 	]
 	stream = StringIO()
 	printer = Printer(stream)
@@ -151,7 +139,7 @@ def test_captures_no_output():
 
 def test_omits_blocks_for_passes_without_output():
 	group = Group("user_test", Path("test", "user_test.py"), [Test("test_create")])
-	result = Pass("user_test", "test_create", Output("", ""))
+	result = Pass(Test("test_create"), "")
 	stream = StringIO()
 	printer = Printer(stream)
 	reporter = Reporter(printer, Lines(printer), capture.Never())
@@ -170,9 +158,9 @@ def test_separates_sections_and_blocks_with_blank_lines():
 		[Test("test_create"), Test("test_update"), Test("test_delete")],
 	)
 	results = [
-		Pass("user_test", "test_create", Output("", "")),
-		Fail("user_test", "test_update", "expected 1, got 2", Output("", "")),
-		Error("user_test", "test_delete", "ValueError\n", Output("", "")),
+		Pass(Test("test_create"), ""),
+		Fail(Test("test_update"), "", "expected 1, got 2", None),
+		Error(Test("test_delete"), "", "ValueError\n"),
 	]
 	stream = StringIO()
 	printer = Printer(stream)
@@ -200,10 +188,10 @@ def test_counts_results_by_status():
 		],
 	)
 	results = [
-		Pass("user_test", "test_create", Output("", "")),
-		Fail("user_test", "test_update", "", Output("", "")),
-		Error("user_test", "test_delete", "ValueError\n", Output("", "")),
-		Error("user_test", "test_archive", "KeyError\n", Output("", "")),
+		Pass(Test("test_create"), ""),
+		Fail(Test("test_update"), "", "", None),
+		Error(Test("test_delete"), "", "ValueError\n"),
+		Error(Test("test_archive"), "", "KeyError\n"),
 	]
 	stream = StringIO()
 	printer = Printer(stream)
@@ -223,7 +211,7 @@ def test_counts_results_by_status():
 
 def test_leaves_out_zero_counts():
 	group = Group("user_test", Path("test", "user_test.py"), [Test("test_create")])
-	result = Pass("user_test", "test_create", Output("", ""))
+	result = Pass(Test("test_create"), "")
 	stream = StringIO()
 	printer = Printer(stream)
 	reporter = Reporter(printer, Lines(printer), capture.Always())

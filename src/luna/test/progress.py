@@ -2,10 +2,9 @@ from abc import ABC, abstractmethod
 from collections.abc import Sequence
 
 from luna import ansi
-from luna.ansi import Escape
 from luna.printer import Printer
 from luna.test.group import Group
-from luna.test.result import Error, Fail, Pass, Result
+from luna.test.result import Result
 
 
 class Progress(ABC):
@@ -22,17 +21,8 @@ class Lines(Progress):
 
 	def advance(self, group: Group, results: Sequence[Result]):
 		for result in results:
-			self.printer.write(f"{label(result)}\t{group.name}:{result.test_name}\n")
+			label = ansi.escape(result.status.color, result.status.label)
+			self.printer.write(f"{label}\t{group.name}:{result.test.name}\n")
 
 	def finish(self):
 		pass
-
-
-def label(result: Result) -> str:
-	match result:
-		case Pass():
-			return ansi.escape(Escape.GREEN, "PASS")
-		case Fail():
-			return ansi.escape(Escape.RED, "FAIL")
-		case Error():
-			return ansi.escape(Escape.YELLOW, "ERROR")

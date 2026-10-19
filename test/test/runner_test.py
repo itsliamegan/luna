@@ -95,6 +95,26 @@ def test_imports_each_test_file_once_during_execution():
 		assert_eq(imports.read_text(), "2")
 
 
+def test_captures_output_in_the_order_it_was_written():
+	with TemporaryDirectory() as temporary_directory:
+		test_directory = Path(temporary_directory, "test")
+		test_directory.mkdir()
+		Path(test_directory, "user_test.py").write_text(
+			"import sys\n\n"
+			"def test_create():\n"
+			"\tprint('first')\n"
+			"\tprint('second', file=sys.stderr)\n"
+			"\tprint('third')\n"
+		)
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, Lines(printer), capture.Always())
+
+		results = Runner(jobs=1).run(Suite.discover(test_directory), reporter)
+
+	result = assert_is_instance(results[0], Pass)
+	assert_eq(result.output, "first\nsecond\nthird\n")
+
+
 def test_formats_error_tracebacks_without_runner_frames():
 	with TemporaryDirectory() as temporary_dir:
 		test_dir = Path(temporary_dir).joinpath("test")
@@ -109,10 +129,10 @@ def test_formats_error_tracebacks_without_runner_frames():
 
 	result = results[0]
 	error = assert_is_instance(result, Error)
-	assert_in("error_test.py", error.error)
-	assert_in('raise ValueError("unexpected")', error.error)
-	assert_in("ValueError: unexpected", error.error)
-	assert_not_in("run_case", error.error)
+	assert_in("error_test.py", error.traceback)
+	assert_in('raise ValueError("unexpected")', error.traceback)
+	assert_in("ValueError: unexpected", error.traceback)
+	assert_not_in("run_case", error.traceback)
 
 
 def test_locates_failures_in_test_cases():

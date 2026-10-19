@@ -6,7 +6,6 @@ from luna.ansi import Escape
 from luna.printer import Printer
 from luna.test.assertion import assert_eq
 from luna.test.group import Group
-from luna.test.output import Output
 from luna.test.progress import Lines
 from luna.test.result import Error, Fail, Pass
 from luna.test.test import Test
@@ -19,9 +18,9 @@ def test_writes_a_line_per_result():
 		[Test("test_create"), Test("test_update"), Test("test_delete")],
 	)
 	results = [
-		Pass("user_test", "test_create", Output("", "")),
-		Fail("user_test", "test_update", "", Output("", "")),
-		Error("user_test", "test_delete", "ValueError\n", Output("", "")),
+		Pass(Test("test_create"), ""),
+		Fail(Test("test_update"), "", "", None),
+		Error(Test("test_delete"), "", "ValueError\n"),
 	]
 	stream = StringIO()
 	progress = Lines(Printer(stream))

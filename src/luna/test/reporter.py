@@ -4,12 +4,11 @@ from datetime import timedelta
 from pathlib import Path
 
 from luna import ansi, inflect
-from luna.ansi import Escape
 from luna.printer import Printer
 from luna.test.capture import Capture
 from luna.test.group import Group
-from luna.test.progress import Progress, label
-from luna.test.result import Error, Fail, Pass, Result
+from luna.test.progress import Progress
+from luna.test.result import Error, Fail, Pass, Result, Status
 
 
 class Reporter:
@@ -36,15 +35,14 @@ class Reporter:
 		self.write_summary(elapsed)
 
 	def has_details(self, result: Result) -> bool:
-		match result:
-			case Pass():
-				written = bool(result.output.stdout or result.output.stderr)
-				return written and self.capture.shows(result)
-			case Fail() | Error():
-				return True
+		if result.status.failing:
+			return True
+		else:
+			return bool(result.output) and self.capture.shows(result)
 
 	def write_details(self, group: Group, result: Result):
-		self.printer.write(f"{label(result)}\t{group.name}:{result.test_name}\n")
+		label = ansi.escape(result.status.color, result.status.label)
+		self.printer.write(f"{label}\t{group.name}:{result.test.name}\n")
 		with self.printer.indented():
 			match result:
 				case Pass():
@@ -56,13 +54,12 @@ class Reporter:
 						self.printer.write(f"{path}:{location.line}\n")
 						with self.printer.indented("    "):
 							self.write_lines(location.source)
-					self.write_lines(result.error)
+					self.write_lines(result.message)
 				case Error():
-					self.write_lines(result.error)
+					self.write_lines(result.traceback)
 
 			if self.capture.shows(result):
-				self.write_lines(result.output.stdout)
-				self.write_lines(result.output.stderr)
+				self.write_lines(result.output)
 
 	def write_lines(self, text: str):
 		if not text:
@@ -73,26 +70,24 @@ class Reporter:
 			self.printer.end_line()
 
 	def write_summary(self, elapsed: timedelta):
-		passed = 0
-		failed = 0
-		errors = 0
-		for finished in self.finished:
-			for result in finished.results:
-				match result:
-					case Pass():
-						passed += 1
-					case Fail():
-						failed += 1
-					case Error():
-						errors += 1
-
 		counts = []
-		if passed:
-			counts.append(ansi.escape(Escape.GREEN, f"{passed} passed"))
-		if failed:
-			counts.append(ansi.escape(Escape.RED, f"{failed} failed"))
-		if errors:
-			counts.append(ansi.escape(Escape.YELLOW, inflect.count(errors, "error")))
+		for status in Status:
+			count = 0
+			for finished in self.finished:
+				for result in finished.results:
+					if result.status is status:
+						count += 1
+			if not count:
+				continue
+
+			match status:
+				case Status.PASS:
+					text = f"{count} passed"
+				case Status.FAIL:
+					text = f"{count} failed"
+				case Status.ERROR:
+					text = inflect.count(count, "error")
+			counts.append(ansi.escape(status.color, text))
 		self.printer.write(f"{", ".join(counts)} in {elapsed.total_seconds():.2f}s\n")
 
 
