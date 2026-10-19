@@ -14,12 +14,12 @@ def test_always_capture_shows_no_output():
 	)
 
 
-def test_pass_capture_shows_failing_output():
-	passing = capture.Pass()
+def test_only_pass_capture_shows_failing_output():
+	only_pass = capture.OnlyPass()
 
-	assert_that(not passing.shows(Pass("user_test", "test_create", Output("", ""))))
-	assert_that(passing.shows(Fail("user_test", "test_create", "", Output("", ""))))
-	assert_that(passing.shows(Error("user_test", "test_create", "", Output("", ""))))
+	assert_that(not only_pass.shows(Pass("user_test", "test_create", Output("", ""))))
+	assert_that(only_pass.shows(Fail("user_test", "test_create", "", Output("", ""))))
+	assert_that(only_pass.shows(Error("user_test", "test_create", "", Output("", ""))))
 
 
 def test_never_capture_shows_all_output():

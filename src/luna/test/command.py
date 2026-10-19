@@ -57,14 +57,14 @@ class LunaTest(Command):
 
 		match self.capture:
 			case CaptureStyle.ALWAYS:
-				output_capture = capture.Always()
+				capture_ = capture.Always()
 			case CaptureStyle.PASS:
-				output_capture = capture.Pass()
+				capture_ = capture.OnlyPass()
 			case CaptureStyle.NEVER:
-				output_capture = capture.Never()
+				capture_ = capture.Never()
 
 		printer = Printer(sys.stdout)
-		reporter = Reporter(printer, Lines(printer), output_capture)
+		reporter = Reporter(printer, Lines(printer), capture_)
 		results = Runner(self.jobs).run(suite, reporter)
 		reporter.suite_finished(timedelta(seconds=time.perf_counter() - started))
 

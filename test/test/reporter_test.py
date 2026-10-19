@@ -114,7 +114,7 @@ def test_captures_failing_output():
 	]
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), capture.Pass())
+	reporter = Reporter(printer, Lines(printer), capture.OnlyPass())
 
 	reporter.group_finished(group, results)
 	reporter.suite_finished(timedelta(seconds=1))
