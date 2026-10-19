@@ -3,7 +3,6 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 
 from luna.printer import Printer
-from luna.test import Error, Fail, Pass
 from luna.test.assertion import (
 	assert_eq,
 	assert_in,
@@ -13,8 +12,10 @@ from luna.test.assertion import (
 	assert_not_none,
 	assert_that,
 )
+from luna.test.capture import AlwaysCapture
 from luna.test.progress import Lines
-from luna.test.reporter import Capture, Reporter
+from luna.test.reporter import Reporter
+from luna.test.result import Error, Fail, Pass
 from luna.test.runner import Runner
 from luna.test.suite import Suite
 
@@ -43,7 +44,7 @@ def test_runs_test_files_in_parallel():
 			)
 
 		printer = Printer(StringIO())
-		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 		results = Runner(jobs=2).run(Suite.discover(test_dir), reporter)
 
 		assert_that(all(isinstance(result, Pass) for result in results))
@@ -60,7 +61,7 @@ def test_reports_groups_in_discovery_order():
 		Path(test_directory, "user_test.py").write_text("def test_create():\n\tpass\n")
 		stream = StringIO()
 		printer = Printer(stream)
-		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 
 		Runner(jobs=2).run(Suite.discover(test_directory), reporter)
 
@@ -87,7 +88,7 @@ def test_imports_each_test_file_once_during_execution():
 
 		suite = Suite.discover(test_dir)
 		printer = Printer(StringIO())
-		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 		results = Runner(jobs=1).run(suite, reporter)
 
 		assert_that(all(isinstance(result, Pass) for result in results))
@@ -103,7 +104,7 @@ def test_formats_error_tracebacks_without_runner_frames():
 		)
 
 		printer = Printer(StringIO())
-		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 		results = Runner(jobs=1).run(Suite.discover(test_dir), reporter)
 
 	result = results[0]
@@ -133,7 +134,7 @@ def test_locates_failures_in_test_cases():
 		)
 
 		printer = Printer(StringIO())
-		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 		results = Runner(jobs=1).run(Suite.discover(test_dir), reporter)
 
 	locations = []

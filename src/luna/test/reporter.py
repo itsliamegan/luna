@@ -1,21 +1,15 @@
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import timedelta
-from enum import StrEnum
 from pathlib import Path
 
 from luna import ansi, inflect
 from luna.ansi import Escape
 from luna.printer import Printer
-from luna.test import Error, Fail, Pass, Result
+from luna.test.capture import Capture
 from luna.test.group import Group
 from luna.test.progress import Progress, label
-
-
-class Capture(StrEnum):
-	ALWAYS = "always"
-	PASS = "pass"
-	NEVER = "never"
+from luna.test.result import Error, Fail, Pass, Result
 
 
 class Reporter:
@@ -45,16 +39,9 @@ class Reporter:
 		match result:
 			case Pass():
 				written = bool(result.output.stdout or result.output.stderr)
-				return written and self.shows_output(result)
+				return written and self.capture.shows(result)
 			case Fail() | Error():
 				return True
-
-	def shows_output(self, result: Result) -> bool:
-		match result:
-			case Pass():
-				return self.capture is Capture.NEVER
-			case Fail() | Error():
-				return self.capture is not Capture.ALWAYS
 
 	def write_details(self, group: Group, result: Result):
 		self.printer.write(f"{label(result)}\t{group.name}:{result.test_name}\n")
@@ -73,7 +60,7 @@ class Reporter:
 				case Error():
 					self.write_lines(result.error)
 
-			if self.shows_output(result):
+			if self.capture.shows(result):
 				self.write_lines(result.output.stdout)
 				self.write_lines(result.output.stderr)
 

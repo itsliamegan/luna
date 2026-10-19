@@ -4,8 +4,8 @@ from collections.abc import Sequence
 from luna import ansi
 from luna.ansi import Escape
 from luna.printer import Printer
-from luna.test import Error, Fail, Pass, Result
 from luna.test.group import Group
+from luna.test.result import Error, Fail, Pass, Result
 
 
 class Progress(ABC):

@@ -4,10 +4,11 @@ from pathlib import Path
 from luna import ansi
 from luna.ansi import Escape
 from luna.printer import Printer
-from luna.test import Error, Fail, Output, Pass
 from luna.test.assertion import assert_eq
 from luna.test.group import Group
+from luna.test.output import Output
 from luna.test.progress import Lines
+from luna.test.result import Error, Fail, Pass
 from luna.test.test import Test
 
 

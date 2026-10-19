@@ -5,11 +5,14 @@ from pathlib import Path
 from luna import ansi
 from luna.ansi import Escape
 from luna.printer import Printer
-from luna.test import Error, Fail, Location, Output, Pass
 from luna.test.assertion import assert_eq, assert_in, assert_not_in
+from luna.test.capture import AlwaysCapture, NeverCapture, PassCapture
 from luna.test.group import Group
+from luna.test.location import Location
+from luna.test.output import Output
 from luna.test.progress import Lines
-from luna.test.reporter import Capture, Reporter
+from luna.test.reporter import Reporter
+from luna.test.result import Error, Fail, Pass
 from luna.test.test import Test
 
 
@@ -23,7 +26,7 @@ def test_indents_multiline_errors():
 	)
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+	reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 
 	reporter.group_finished(group, [result])
 	reporter.suite_finished(timedelta(seconds=1))
@@ -55,7 +58,7 @@ def test_reports_failure_locations():
 	)
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+	reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 
 	reporter.group_finished(group, [result])
 	reporter.suite_finished(timedelta(seconds=1))
@@ -87,7 +90,7 @@ def test_captures_all_output():
 	]
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+	reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 
 	reporter.group_finished(group, results)
 	reporter.suite_finished(timedelta(seconds=1))
@@ -111,7 +114,7 @@ def test_captures_failing_output():
 	]
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.PASS)
+	reporter = Reporter(printer, Lines(printer), PassCapture())
 
 	reporter.group_finished(group, results)
 	reporter.suite_finished(timedelta(seconds=1))
@@ -135,7 +138,7 @@ def test_captures_no_output():
 	]
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.NEVER)
+	reporter = Reporter(printer, Lines(printer), NeverCapture())
 
 	reporter.group_finished(group, results)
 	reporter.suite_finished(timedelta(seconds=1))
@@ -151,7 +154,7 @@ def test_omits_blocks_for_passes_without_output():
 	result = Pass("user_test", "test_create", Output("", ""))
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.NEVER)
+	reporter = Reporter(printer, Lines(printer), NeverCapture())
 
 	reporter.group_finished(group, [result])
 	reporter.suite_finished(timedelta(seconds=1))
@@ -173,7 +176,7 @@ def test_separates_sections_and_blocks_with_blank_lines():
 	]
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+	reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 
 	reporter.group_finished(group, results)
 	reporter.suite_finished(timedelta(seconds=1))
@@ -204,7 +207,7 @@ def test_counts_results_by_status():
 	]
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+	reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 
 	reporter.group_finished(group, results)
 	reporter.suite_finished(timedelta(seconds=1.5))
@@ -223,7 +226,7 @@ def test_leaves_out_zero_counts():
 	result = Pass("user_test", "test_create", Output("", ""))
 	stream = StringIO()
 	printer = Printer(stream)
-	reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+	reporter = Reporter(printer, Lines(printer), AlwaysCapture())
 
 	reporter.group_finished(group, [result])
 	reporter.suite_finished(timedelta(seconds=0.25))

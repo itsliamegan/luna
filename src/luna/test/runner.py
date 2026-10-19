@@ -5,9 +5,11 @@ from io import StringIO
 import traceback
 from types import ModuleType
 
-from luna.test import Error, Fail, Location, Output, Pass, Result
 from luna.test.group import Group
+from luna.test.location import Location
+from luna.test.output import Output
 from luna.test.reporter import Reporter
+from luna.test.result import Error, Fail, Pass, Result
 from luna.test.suite import Suite
 from luna.test.test import Test
 
