@@ -47,6 +47,7 @@ type Result = Pass | Fail | Error
 @dataclass
 class Pass:
 	status: ClassVar[Status] = Status.PASS
+
 	test: Test
 	output: str
 
@@ -54,6 +55,7 @@ class Pass:
 @dataclass
 class Fail:
 	status: ClassVar[Status] = Status.FAIL
+
 	test: Test
 	output: str
 	message: str
@@ -63,6 +65,7 @@ class Fail:
 @dataclass
 class Error:
 	status: ClassVar[Status] = Status.ERROR
+
 	test: Test
 	output: str
 	traceback: str
