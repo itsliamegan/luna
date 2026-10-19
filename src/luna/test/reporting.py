@@ -14,11 +14,8 @@ class Capture(StrEnum):
 
 
 def report(results: Sequence[Result], capture: Capture = Capture.ALWAYS) -> bool:
-	def sort_key(result: Result) -> tuple[str, int]:
-		return result.test_name, result.case_index
-
 	passed = True
-	for result in sorted(results, key=sort_key):
+	for result in results:
 		if isinstance(result, Pass):
 			desc = ansi.escape(Escape.GREEN, "PASS")
 		elif isinstance(result, Fail):
@@ -28,7 +25,7 @@ def report(results: Sequence[Result], capture: Capture = Capture.ALWAYS) -> bool
 			desc = ansi.escape(Escape.YELLOW, "ERROR")
 			passed = False
 
-		print(f"{desc}\t{result.test_name}:{result.case_name}")
+		print(f"{desc}\t{result.group_name}:{result.test_name}")
 
 		if isinstance(result, Fail) and result.location is not None:
 			location = result.location
