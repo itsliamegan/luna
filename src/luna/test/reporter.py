@@ -42,30 +42,36 @@ class Reporter:
 		self.write_summary(elapsed)
 
 	def has_details(self, result: Result) -> bool:
-		if isinstance(result, Pass):
-			written = bool(result.output.stdout or result.output.stderr)
-			return written and self.shows_output(result)
-		else:
-			return True
+		match result:
+			case Pass():
+				written = bool(result.output.stdout or result.output.stderr)
+				return written and self.shows_output(result)
+			case Fail() | Error():
+				return True
 
 	def shows_output(self, result: Result) -> bool:
-		if isinstance(result, Pass):
-			return self.capture is Capture.NEVER
-		else:
-			return self.capture is not Capture.ALWAYS
+		match result:
+			case Pass():
+				return self.capture is Capture.NEVER
+			case Fail() | Error():
+				return self.capture is not Capture.ALWAYS
 
 	def write_details(self, group: Group, result: Result):
 		self.printer.write(f"{label(result)}\t{group.name}:{result.test_name}\n")
 		with self.printer.indented():
-			if isinstance(result, Fail) and result.location is not None:
-				location = result.location
-				path = location.path.relative_to(Path.cwd(), walk_up=True)
-				self.printer.write(f"{path}:{location.line}\n")
-				with self.printer.indented("    "):
-					self.write_lines(location.source)
-
-			if isinstance(result, (Fail, Error)) and result.error:
-				self.write_lines(result.error)
+			match result:
+				case Pass():
+					pass
+				case Fail():
+					if result.location is not None:
+						location = result.location
+						path = location.path.relative_to(Path.cwd(), walk_up=True)
+						self.printer.write(f"{path}:{location.line}\n")
+						with self.printer.indented("    "):
+							self.write_lines(location.source)
+					self.write_lines(result.error)
+				case Error():
+					self.write_lines(result.error)
 
 			if self.shows_output(result):
 				self.write_lines(result.output.stdout)
@@ -85,12 +91,13 @@ class Reporter:
 		errors = 0
 		for finished in self.finished:
 			for result in finished.results:
-				if isinstance(result, Pass):
-					passed += 1
-				elif isinstance(result, Fail):
-					failed += 1
-				elif isinstance(result, Error):
-					errors += 1
+				match result:
+					case Pass():
+						passed += 1
+					case Fail():
+						failed += 1
+					case Error():
+						errors += 1
 
 		counts = []
 		if passed:

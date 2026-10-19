@@ -37,43 +37,28 @@ class Output:
 		self.stderr = stderr
 
 
-class Result:
-	def __init__(
-		self,
-		group_name: str,
-		test_name: str,
-		output: Output,
-	):
-		self.group_name = group_name
-		self.test_name = test_name
-		self.output = output
+type Result = Pass | Fail | Error
 
 
-class Pass(Result):
-	pass
+@dataclass
+class Pass:
+	group_name: str
+	test_name: str
+	output: Output
 
 
-class Fail(Result):
-	def __init__(
-		self,
-		group_name: str,
-		test_name: str,
-		error: str,
-		output: Output,
-		location: Location | None = None,
-	):
-		super().__init__(group_name, test_name, output)
-		self.error = error
-		self.location = location
+@dataclass
+class Fail:
+	group_name: str
+	test_name: str
+	error: str
+	output: Output
+	location: Location | None = None
 
 
-class Error(Result):
-	def __init__(
-		self,
-		group_name: str,
-		test_name: str,
-		error: str,
-		output: Output,
-	):
-		super().__init__(group_name, test_name, output)
-		self.error = error
+@dataclass
+class Error:
+	group_name: str
+	test_name: str
+	error: str
+	output: Output

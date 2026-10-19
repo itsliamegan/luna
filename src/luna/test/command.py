@@ -50,5 +50,6 @@ class LunaTest(Command):
 		reporter.suite_finished(timedelta(seconds=time.perf_counter() - started))
 
 		for result in results:
-			if isinstance(result, (Fail, Error)):
-				raise SystemExit(1)
+			match result:
+				case Fail() | Error():
+					raise SystemExit(1)

@@ -29,11 +29,10 @@ class Lines(Progress):
 
 
 def label(result: Result) -> str:
-	if isinstance(result, Pass):
-		return ansi.escape(Escape.GREEN, "PASS")
-	elif isinstance(result, Fail):
-		return ansi.escape(Escape.RED, "FAIL")
-	elif isinstance(result, Error):
-		return ansi.escape(Escape.YELLOW, "ERROR")
-	else:
-		raise TypeError(f"unknown result: {result!r}")
+	match result:
+		case Pass():
+			return ansi.escape(Escape.GREEN, "PASS")
+		case Fail():
+			return ansi.escape(Escape.RED, "FAIL")
+		case Error():
+			return ansi.escape(Escape.YELLOW, "ERROR")
