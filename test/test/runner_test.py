@@ -1,6 +1,8 @@
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from luna.printer import Printer
 from luna.test import Error, Fail, Pass
 from luna.test.assertion import (
 	assert_eq,
@@ -11,6 +13,8 @@ from luna.test.assertion import (
 	assert_not_none,
 	assert_that,
 )
+from luna.test.progress import Lines
+from luna.test.reporter import Capture, Reporter
 from luna.test.runner import Runner
 from luna.test.suite import Suite
 
@@ -38,10 +42,31 @@ def test_runs_test_files_in_parallel():
 				"\tassert other.exists()\n"
 			)
 
-		results = Runner(jobs=2).run(Suite.discover(test_dir))
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		results = Runner(jobs=2).run(Suite.discover(test_dir), reporter)
 
 		assert_that(all(isinstance(result, Pass) for result in results))
 		assert_not_eq(first_pid.read_text(), second_pid.read_text())
+
+
+def test_reports_groups_in_discovery_order():
+	with TemporaryDirectory() as temporary_directory:
+		test_directory = Path(temporary_directory, "test")
+		test_directory.mkdir()
+		Path(test_directory, "order_test.py").write_text(
+			"import time\n\ndef test_place():\n\ttime.sleep(0.5)\n"
+		)
+		Path(test_directory, "user_test.py").write_text("def test_create():\n\tpass\n")
+		stream = StringIO()
+		printer = Printer(stream)
+		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+
+		Runner(jobs=2).run(Suite.discover(test_directory), reporter)
+
+	lines = stream.getvalue().splitlines()
+	assert_in("order_test:test_place", lines[0])
+	assert_in("user_test:test_create", lines[1])
 
 
 def test_imports_each_test_file_once_during_execution():
@@ -61,7 +86,9 @@ def test_imports_each_test_file_once_during_execution():
 		)
 
 		suite = Suite.discover(test_dir)
-		results = Runner(jobs=1).run(suite)
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		results = Runner(jobs=1).run(suite, reporter)
 
 		assert_that(all(isinstance(result, Pass) for result in results))
 		assert_eq(imports.read_text(), "2")
@@ -75,7 +102,9 @@ def test_formats_error_tracebacks_without_runner_frames():
 			'def test_error():\n\traise ValueError("unexpected")\n'
 		)
 
-		results = Runner(jobs=1).run(Suite.discover(test_dir))
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		results = Runner(jobs=1).run(Suite.discover(test_dir), reporter)
 
 	result = results[0]
 	error = assert_is_instance(result, Error)
@@ -103,7 +132,9 @@ def test_locates_failures_in_test_cases():
 			"\tassert value\n"
 		)
 
-		results = Runner(jobs=1).run(Suite.discover(test_dir))
+		printer = Printer(StringIO())
+		reporter = Reporter(printer, Lines(printer), Capture.ALWAYS)
+		results = Runner(jobs=1).run(Suite.discover(test_dir), reporter)
 
 	locations = []
 	for result in results:

@@ -1,9 +1,14 @@
+from datetime import timedelta
 from pathlib import Path
 import sys
+import time
 
 from luna.cli import Command, argument, option
+from luna.printer import Printer
+from luna.test import Error, Fail
 from luna.test.filter import NameFilter
-from luna.test.reporting import Capture, report
+from luna.test.progress import Lines
+from luna.test.reporter import Capture, Reporter
 from luna.test.runner import Runner
 from luna.test.suite import Suite
 
@@ -24,6 +29,7 @@ class LunaTest(Command):
 	)
 
 	def run(self):
+		started = time.perf_counter()
 		root = Path.cwd()
 		# Put the project root on the import path so that test files can import
 		# shared modules.
@@ -38,7 +44,11 @@ class LunaTest(Command):
 			else:
 				self.fail(f"no tests match {self.pattern!r}")
 
-		results = Runner(self.jobs).run(suite)
-		passed = report(results, self.capture)
-		if not passed:
-			raise SystemExit(1)
+		printer = Printer(sys.stdout)
+		reporter = Reporter(printer, Lines(printer), self.capture)
+		results = Runner(self.jobs).run(suite, reporter)
+		reporter.suite_finished(timedelta(seconds=time.perf_counter() - started))
+
+		for result in results:
+			if isinstance(result, (Fail, Error)):
+				raise SystemExit(1)

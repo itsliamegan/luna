@@ -7,6 +7,7 @@ from types import ModuleType
 
 from luna.test import Error, Fail, Location, Output, Pass, Result
 from luna.test.group import Group
+from luna.test.reporter import Reporter
 from luna.test.suite import Suite
 from luna.test.test import Test
 
@@ -15,10 +16,16 @@ from luna.test.test import Test
 class Runner:
 	jobs: int | None = None
 
-	def run(self, suite: Suite) -> list[Result]:
+	def run(self, suite: Suite, reporter: Reporter) -> list[Result]:
+		results = []
 		with ProcessPoolExecutor(max_workers=self.jobs) as executor:
-			results = executor.map(run_group, suite.groups)
-			return [result for group_results in results for result in group_results]
+			# Results arrive in submission order, so groups that finish early wait
+			# for the groups before them.
+			finished = executor.map(run_group, suite.groups)
+			for group, group_results in zip(suite.groups, finished, strict=True):
+				reporter.group_finished(group, group_results)
+				results.extend(group_results)
+		return results
 
 
 def run_group(group: Group) -> list[Result]:

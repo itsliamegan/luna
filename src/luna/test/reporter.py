@@ -1,0 +1,108 @@
+from collections.abc import Sequence
+from dataclasses import dataclass
+from datetime import timedelta
+from enum import StrEnum
+from pathlib import Path
+
+from luna import ansi, inflect
+from luna.ansi import Escape
+from luna.printer import Printer
+from luna.test import Error, Fail, Pass, Result
+from luna.test.group import Group
+from luna.test.progress import Progress, label
+
+
+class Capture(StrEnum):
+	ALWAYS = "always"
+	PASS = "pass"
+	NEVER = "never"
+
+
+class Reporter:
+	def __init__(self, printer: Printer, progress: Progress, capture: Capture):
+		self.printer = printer
+		self.progress = progress
+		self.capture = capture
+		self.finished: list[FinishedGroup] = []
+
+	def group_finished(self, group: Group, results: Sequence[Result]):
+		self.finished.append(FinishedGroup(group, results))
+		self.progress.advance(group, results)
+
+	def suite_finished(self, elapsed: timedelta):
+		self.progress.finish()
+
+		for finished in self.finished:
+			for result in finished.results:
+				if self.has_details(result):
+					self.printer.end_line()
+					self.write_details(finished.group, result)
+
+		self.printer.end_line()
+		self.write_summary(elapsed)
+
+	def has_details(self, result: Result) -> bool:
+		if isinstance(result, Pass):
+			written = bool(result.output.stdout or result.output.stderr)
+			return written and self.shows_output(result)
+		else:
+			return True
+
+	def shows_output(self, result: Result) -> bool:
+		if isinstance(result, Pass):
+			return self.capture is Capture.NEVER
+		else:
+			return self.capture is not Capture.ALWAYS
+
+	def write_details(self, group: Group, result: Result):
+		self.printer.write(f"{label(result)}\t{group.name}:{result.test_name}\n")
+		with self.printer.indented():
+			if isinstance(result, Fail) and result.location is not None:
+				location = result.location
+				path = location.path.relative_to(Path.cwd(), walk_up=True)
+				self.printer.write(f"{path}:{location.line}\n")
+				with self.printer.indented("    "):
+					self.write_lines(location.source)
+
+			if isinstance(result, (Fail, Error)) and result.error:
+				self.write_lines(result.error)
+
+			if self.shows_output(result):
+				self.write_lines(result.output.stdout)
+				self.write_lines(result.output.stderr)
+
+	def write_lines(self, text: str):
+		if not text:
+			return
+
+		self.printer.write(text)
+		if not text.endswith("\n"):
+			self.printer.end_line()
+
+	def write_summary(self, elapsed: timedelta):
+		passed = 0
+		failed = 0
+		errors = 0
+		for finished in self.finished:
+			for result in finished.results:
+				if isinstance(result, Pass):
+					passed += 1
+				elif isinstance(result, Fail):
+					failed += 1
+				elif isinstance(result, Error):
+					errors += 1
+
+		counts = []
+		if passed:
+			counts.append(ansi.escape(Escape.GREEN, f"{passed} passed"))
+		if failed:
+			counts.append(ansi.escape(Escape.RED, f"{failed} failed"))
+		if errors:
+			counts.append(ansi.escape(Escape.YELLOW, inflect.count(errors, "error")))
+		self.printer.write(f"{", ".join(counts)} in {elapsed.total_seconds():.2f}s\n")
+
+
+@dataclass
+class FinishedGroup:
+	group: Group
+	results: Sequence[Result]
