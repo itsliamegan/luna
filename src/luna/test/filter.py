@@ -9,7 +9,7 @@ class Filter(ABC):
 	def match(self, group: Group, test: Test) -> bool: ...
 
 
-class NameFilter(Filter):
+class Name(Filter):
 	def __init__(self, name: str):
 		self.name = name
 

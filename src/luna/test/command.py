@@ -6,8 +6,7 @@ import time
 
 from luna.cli import Command, argument, option
 from luna.printer import Printer
-from luna.test import capture
-from luna.test.filter import NameFilter
+from luna.test import capture, filter
 from luna.test.progress import Lines
 from luna.test.reporter import Reporter
 from luna.test.result import Error, Fail
@@ -47,7 +46,7 @@ class LunaTest(Command):
 		sys.path.insert(0, str(root))
 		suite = Suite.discover(Path(root, "test"))
 		if self.pattern is not None:
-			suite = suite.select(NameFilter(self.pattern))
+			suite = suite.select(filter.Name(self.pattern))
 
 		if not suite.groups:
 			if self.pattern is None:
